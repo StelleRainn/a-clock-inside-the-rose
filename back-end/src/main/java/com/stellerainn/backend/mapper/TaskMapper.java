@@ -1,6 +1,7 @@
 package com.stellerainn.backend.mapper;
 
 import com.stellerainn.backend.entity.Task;
+import com.stellerainn.backend.entity.TaskStats;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
@@ -25,4 +26,7 @@ public interface TaskMapper {
 
     @Delete("DELETE FROM tasks WHERE id = #{id}")
     void delete(Long id);
+
+    @Select("SELECT status, COUNT(*) as count FROM tasks WHERE user_id = #{userId} GROUP BY status")
+    List<TaskStats> getTaskStatusStats(Long userId);
 }

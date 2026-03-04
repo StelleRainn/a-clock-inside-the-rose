@@ -17,35 +17,53 @@
 - [ ] **核心模块开发 (交互与逻辑)**
     - [ ] **Pomodoro (番茄钟)**: 实现倒计时逻辑、状态管理 (运行/暂停/重置)、完成通知。
         - *Priority*: High (核心功能)
-    - [ ] **Tasks (任务管理)**: 实现任务列表展示、添加、删除、状态切换 (使用 Mock 数据)。
+    - [x] **Tasks (任务管理)**: 实现任务列表展示、添加、删除、状态切换 (使用 Mock 数据 -> 已对接真实 API)。
         - *Priority*: High
     - [ ] **Dashboard (仪表盘)**: 聚合展示今日数据。
     - [ ] **Stats (统计)**: 集成 ECharts/Chart.js 展示图表。
-    - [ ] **Auth (认证)**: 登录/注册表单验证。
+    - [x] **Auth (认证)**: 登录/注册表单验证。
 
-## Phase 2: 数据库设计与建模
+## Phase 1.5: 细节打磨与体验优化 (Next Milestone)
+> 目标：在核心功能可用的基础上，提升用户体验和系统稳定性。
+
+- [ ] **Task (任务管理) 进阶**:
+    - [ ] **看板视图 (Kanban View)**: 实现类似 Trello 的拖拽任务管理。
+    - [ ] **任务详情页**: 支持 Markdown 渲染描述，增加标签 (Tags) 管理。
+    - [ ] **筛选与排序**: 支持按优先级、状态、截止时间排序。
+- [ ] **Pomodoro (番茄钟) 进阶**:
+    - [ ] **任务绑定**: 启动番茄钟时，允许选择关联当前正在进行的任务。
+    - [ ] **白噪音 (White Noise)**: 提供背景音效（雨声、咖啡馆等）。
+    - [ ] **全屏专注模式**: 提供沉浸式 UI。
+- [ ] **Dashboard (仪表盘) 增强**:
+    - [ ] **日历视图**: 在日历上展示每日的任务完成情况和专注时长。
+    - [ ] **待办事项提醒**: 临近截止日期的任务高亮显示。
+- [ ] **Settings (设置)**:
+    - [ ] **个人资料**: 修改头像、密码。
+    - [ ] **番茄钟偏好**: 自定义默认工作/休息时长。
+
+## Phase 2: 数据库设计与建模 (Completed)
 > 目标：设计支撑业务的数据库结构。
 
-- [ ] **ER 图设计**: 确定 User, Task, PomodoroRecord, Tag 等实体关系。
-- [ ] **Schema 实现**: 编写 SQL 建表脚本。
+- [x] **ER 图设计**: 确定 User, Task, PomodoroRecord, Tag 等实体关系。
+- [x] **Schema 实现**: 编写 SQL 建表脚本。
     - `users`: 用户信息
     - `tasks`: 任务详情 (title, status, due_date, priority)
     - `pomodoro_records`: 专注记录 (start_time, duration, linked_task_id)
 
-## Phase 3: 后端开发 (Spring Boot)
+## Phase 3: 后端开发 (Spring Boot) (Completed)
 > 目标：提供 RESTful API，替换前端 Mock 数据。
 
-- [ ] **环境配置**: Spring Boot 3.x 初始化, MyBatis/JPA 配置。
-- [ ] **API 实现**:
+- [x] **环境配置**: Spring Boot 3.x 初始化, MyBatis/JPA 配置。
+- [x] **API 实现**:
     - Auth: `/api/auth/login`, `/api/auth/register`
     - Tasks: `/api/tasks` (CRUD)
     - Pomodoro: `/api/pomodoro` (Save record)
-    - Stats: `/api/stats/daily`
-- [ ] **单元测试**: Service 层逻辑验证。
+    - Stats: `/api/stats/daily` (Daily Focus & Task Status)
+- [ ] **单元测试**: Service 层逻辑验证 (Optional for MVP)。
 
-## Phase 4: 系统联调与优化
+## Phase 4: 系统联调与优化 (Ongoing)
 > 目标：前后端对接，完善系统。
 
-- [ ] **接口联调**: 前端 Axios 对接真实后端 API。
-- [ ] **功能完善**: 错误处理、加载状态、权限控制。
+- [x] **接口联调**: 前端 Axios 对接真实后端 API。
+- [x] **功能完善**: 错误处理 (404/500)、加载状态、权限控制 (未登录跳转)。
 - [ ] **部署准备**: Docker 镜像或常规部署文档。
