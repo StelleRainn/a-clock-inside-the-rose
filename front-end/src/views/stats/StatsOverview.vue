@@ -67,6 +67,14 @@
       </template>
     </el-dialog>
 
+    <!-- Focus Heatmap Section -->
+    <el-card class="mb-20">
+      <template #header>
+        <span>Focus Heatmap (Yearly)</span>
+      </template>
+      <div ref="heatmapChartRef" style="height: 200px;"></div>
+    </el-card>
+
     <!-- Achievement Section -->
     <el-card class="mb-20">
       <template #header>
@@ -117,19 +125,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import * as echarts from 'echarts'
 import html2canvas from 'html2canvas'
 import { getDailyFocusStats, getTaskStatusStats } from '@/api/stats'
 import { getUserAchievements, getUserStats } from '@/api/gamification'
 import { useUserStore } from '@/stores/user'
+import { useThemeStore } from '@/stores/theme'
 import { Medal, Trophy, Calendar, Finished, Share, Timer } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
+const themeStore = useThemeStore()
 const focusChartRef = ref(null)
 const taskChartRef = ref(null)
+const heatmapChartRef = ref(null)
 let focusChart = null
 let taskChart = null
+let heatmapChart = null
 
 const achievements = ref([])
 const achievementsLoading = ref(false)
@@ -211,6 +223,90 @@ const generateShareCard = async () => {
   }
 }
 
+const updateHeatmapOptions = () => {
+  if (!heatmapChart) return
+  
+  const isDark = themeStore.isDark
+  
+  // Colors
+  // Light: Empty=#ebedf0, Heatmap=['#9be9a8', '#40c463', '#30a14e', '#216e39']
+  // Optimized Light (Deeper start): ['#ebedf0', '#40c463', '#30a14e', '#216e39', '#10441c']
+  
+  // Dark: Empty=#2d2d2d (gray), Heatmap=['#0e4429', '#006d32', '#26a641', '#39d353'] (Github Dark)
+  // Actually Github Dark uses: #161b22 (empty), #0e4429, #006d32, #26a641, #39d353
+  
+  // User Feedback: "Ensure even 1 minute is visible"
+  // We need to adjust the first color in the range to be distinct from empty color
+  // Light Mode Empty: #ebedf0. First Green: #9be9a8. (Good contrast)
+  // Dark Mode Empty: #2d2d2d. First Green: #0e4429. (Might be too dark)
+  
+  // Let's brighten the first step for Dark Mode slightly
+  // Using GitHub's actual dark mode palette: #161b22 (bg), #0e4429 (L1), #006d32 (L2), #26a641 (L3), #39d353 (L4)
+  // But our bg is #2d2d2d (lighter gray). 
+  // #0e4429 is very dark green. On #2d2d2d it might look black.
+  // Let's try a lighter green for L1: #1a7f37
+  
+  const finalDarkColors = ['#2d2d2d', '#238636', '#2ea043', '#3fb950', '#a2d9a7'] // Lighter range for better visibility
+
+  // Re-evaluating Light Mode based on "Deeper start" request
+  // Previous: #6cd675 (User thought it was too light? No, "can be deeper")
+  // User said: "colors (especially start color...) can be deeper, current is too light"
+  // So instead of #9be9a8, let's use something closer to #40c463 as start?
+  // Let's shift the whole spectrum darker.
+  const lightColorsDeep = ['#ebedf0', '#40c463', '#30a14e', '#216e39', '#0e4429']
+
+  const colors = isDark ? finalDarkColors : lightColorsDeep
+  const borderColor = isDark ? '#1a1a1a' : '#ffffff'
+  const textColor = isDark ? '#ccc' : '#333'
+  const splitLineColor = isDark ? '#333' : '#ccc'
+
+  heatmapChart.setOption({
+    visualMap: {
+      min: 0,
+      max: 120,
+      inRange: {
+        color: colors
+      },
+      textStyle: {
+        color: textColor
+      }
+    },
+    calendar: {
+      itemStyle: {
+        borderColor: borderColor,
+        borderWidth: 3
+      },
+      splitLine: {
+        lineStyle: {
+          color: splitLineColor
+        }
+      },
+      dayLabel: {
+        color: textColor
+      },
+      monthLabel: {
+        color: textColor
+      }
+    },
+    series: {
+      type: 'heatmap',
+      coordinateSystem: 'calendar',
+      itemStyle: {
+        borderRadius: 3,
+        borderColor: borderColor,
+        borderWidth: 3
+      }
+    }
+  })
+}
+
+// Watch theme changes
+watch(() => themeStore.isDark, () => {
+  updateHeatmapOptions()
+  // Also update other charts if needed (text colors)
+  // focusChart?.setOption(...)
+})
+
 const initCharts = async () => {
   if (!userStore.user || !userStore.user.id) return
 
@@ -255,6 +351,67 @@ const initCharts = async () => {
           }
         ]
       })
+
+      // 3. Render Heatmap (Using same daily data)
+      if (heatmapChartRef.value) {
+        heatmapChart = echarts.init(heatmapChartRef.value)
+        const currentYear = new Date().getFullYear()
+        
+        // Generate full year date range to ensure all days are interactive
+        const startDate = new Date(currentYear, 0, 1)
+        const endDate = new Date(currentYear, 11, 31)
+        const dateMap = new Map()
+        
+        // Fill map with actual data
+        dailyData.forEach(item => {
+          dateMap.set(item.date, Math.round(item.totalSeconds / 60))
+        })
+        
+        const heatmapData = []
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+          const dateStr = d.toISOString().split('T')[0]
+          const value = dateMap.get(dateStr) || 0
+          heatmapData.push([dateStr, value])
+        }
+
+        heatmapChart.setOption({
+          tooltip: {
+            position: 'top',
+            formatter: (params) => {
+              if (params.value[1] === 0) {
+                 return `${params.value[0]}: No focus records yet`
+              }
+              return `${params.value[0]}: ${params.value[1]} mins`
+            }
+          },
+          visualMap: {
+            min: 0,
+            max: 120, // Max 2 hours for deep color
+            calculable: false,
+            orient: 'horizontal',
+            left: 'center',
+            bottom: '0%',
+            // Initial colors will be set by updateHeatmapOptions
+          },
+          calendar: {
+            top: 30,
+            left: 30,
+            right: 30,
+            cellSize: ['auto', 13],
+            range: currentYear,
+            yearLabel: { show: false }
+          },
+          series: {
+            type: 'heatmap',
+            coordinateSystem: 'calendar',
+            data: heatmapData
+          }
+        })
+        
+        // Apply theme styles immediately
+        updateHeatmapOptions()
+      }
+
     } catch (e) {
       console.error(e)
       focusChart.hideLoading()
@@ -319,6 +476,7 @@ const initCharts = async () => {
 const resizeCharts = () => {
   focusChart?.resize()
   taskChart?.resize()
+  heatmapChart?.resize()
 }
 
 onMounted(() => {
@@ -331,6 +489,7 @@ onUnmounted(() => {
   window.removeEventListener('resize', resizeCharts)
   focusChart?.dispose()
   taskChart?.dispose()
+  heatmapChart?.dispose()
 })
 </script>
 
@@ -355,8 +514,8 @@ onUnmounted(() => {
   align-items: center;
   padding: 15px;
   border-radius: 8px;
-  background-color: #f5f7fa;
-  border: 1px solid #e4e7ed;
+  background-color: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-lighter);
   opacity: 0.6;
   filter: grayscale(100%);
   transition: all 0.3s ease;
@@ -364,14 +523,14 @@ onUnmounted(() => {
 .achievement-item.unlocked {
   opacity: 1;
   filter: grayscale(0%);
-  background-color: #f0f9eb;
-  border-color: #e1f3d8;
+  background-color: var(--el-color-success-light-9);
+  border-color: var(--el-color-success-light-8);
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 .icon-wrapper {
   margin-right: 15px;
-  color: #67c23a;
-  background: white;
+  color: var(--el-color-success);
+  background: var(--el-bg-color);
   padding: 10px;
   border-radius: 50%;
   display: flex;
@@ -381,23 +540,23 @@ onUnmounted(() => {
 .achievement-info h4 {
   margin: 0 0 5px 0;
   font-size: 16px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 .achievement-info p {
   margin: 0;
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 .unlock-date {
   display: block;
   margin-top: 5px;
   font-size: 10px;
-  color: #67c23a;
+  color: var(--el-color-success);
   font-weight: bold;
 }
 .hint-text {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   margin-right: 10px;
 }
 

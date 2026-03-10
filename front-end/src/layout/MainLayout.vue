@@ -29,6 +29,15 @@
         <div class="header-content">
           <h2>A Clock Inside the Rose</h2>
           <div class="right-panel">
+            <!-- Dark Mode Toggle -->
+            <el-switch
+              v-model="themeStore.isDark"
+              inline-prompt
+              :active-icon="Moon"
+              :inactive-icon="Sunny"
+              style="margin-right: 16px"
+            />
+
             <!-- User Level Display -->
             <div v-if="userLevel" class="level-container">
               <div class="level-info">
@@ -74,12 +83,15 @@
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useThemeStore } from '@/stores/theme'
+import { Moon, Sunny } from '@element-plus/icons-vue'
 import { getUserStats } from '@/api/gamification'
 import { getUserProfile } from '@/api/user'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const themeStore = useThemeStore()
 
 const activeMenu = computed(() => route.path)
 const username = computed(() => userStore.user?.username || 'User')
@@ -166,15 +178,17 @@ onUnmounted(() => {
   height: 100vh;
 }
 .el-aside {
-  background-color: #f5f7fa;
-  border-right: 1px solid #e6e6e6;
+  background-color: var(--el-bg-color-page);
+  border-right: 1px solid var(--el-border-color-light);
+  transition: background-color 0.3s, border-color 0.3s;
 }
 .el-header {
-  background-color: #fff;
-  border-bottom: 1px solid #e6e6e6;
+  background-color: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 .header-content {
   display: flex;
@@ -195,7 +209,7 @@ onUnmounted(() => {
 }
 .username-text {
   font-weight: 500;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 /* Level Badge Styles */
@@ -212,14 +226,14 @@ onUnmounted(() => {
   font-weight: bold;
 }
 .xp-text {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 10px;
   font-weight: normal;
 }
 .xp-bar-bg {
   width: 100%;
   height: 6px;
-  background-color: #ebeef5;
+  background-color: var(--el-border-color-lighter);
   border-radius: 3px;
   overflow: hidden;
 }

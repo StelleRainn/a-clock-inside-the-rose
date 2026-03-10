@@ -62,6 +62,13 @@ public class TaskService {
         }
     }
 
+    @Transactional
+    public void updateTaskPositions(List<Long> taskIds) {
+        for (int i = 0; i < taskIds.size(); i++) {
+            taskMapper.updatePosition(taskIds.get(i), i);
+        }
+    }
+
     public void deleteTask(Long id) {
         taskMapper.delete(id);
     }

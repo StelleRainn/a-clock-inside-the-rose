@@ -23,10 +23,13 @@ public interface PomodoroMapper {
     @Select("SELECT COUNT(*) FROM pomodoro_records WHERE user_id = #{userId} AND status = 'COMPLETED' AND DATE(created_at) = CURDATE()")
     Integer countTodayCompleted(Long userId);
 
+    @Select("SELECT COALESCE(SUM(duration_seconds), 0) FROM pomodoro_records WHERE user_id = #{userId} AND status = 'COMPLETED' AND DATE(created_at) = CURDATE()")
+    Long sumTodayDurationSeconds(Long userId);
+
     @Select("SELECT DATE(start_time) as date, SUM(duration_seconds) as totalSeconds " +
             "FROM pomodoro_records " +
             "WHERE user_id = #{userId} AND status = 'COMPLETED' " +
-            "AND start_time >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) " +
+            "AND start_time >= DATE_SUB(CURDATE(), INTERVAL 365 DAY) " +
             "GROUP BY DATE(start_time) " +
             "ORDER BY date ASC")
     List<DailyStats> getDailyFocusTime(Long userId);

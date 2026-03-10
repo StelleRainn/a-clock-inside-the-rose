@@ -39,4 +39,10 @@ public class TaskController {
         taskService.deleteTask(id);
         return Result.success("Deleted successfully");
     }
+
+    @PostMapping("/reorder")
+    public Result<String> reorderTasks(@RequestBody List<Long> taskIds) {
+        taskService.updateTaskPositions(taskIds);
+        return Result.success("Tasks reordered successfully");
+    }
 }

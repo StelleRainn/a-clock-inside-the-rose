@@ -9,20 +9,23 @@ import java.util.List;
 @Mapper
 public interface TaskMapper {
 
-    @Select("SELECT * FROM tasks WHERE user_id = #{userId}")
+    @Select("SELECT * FROM tasks WHERE user_id = #{userId} ORDER BY position ASC, created_at DESC")
     List<Task> findByUserId(Long userId);
 
     @Select("SELECT * FROM tasks WHERE id = #{id}")
     Task findById(Long id);
 
-    @Insert("INSERT INTO tasks(user_id, title, description, status, priority, due_date) " +
-            "VALUES(#{userId}, #{title}, #{description}, #{status}, #{priority}, #{dueDate})")
+    @Insert("INSERT INTO tasks(user_id, title, description, status, priority, due_date, position) " +
+            "VALUES(#{userId}, #{title}, #{description}, #{status}, #{priority}, #{dueDate}, #{position})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(Task task);
 
     @Update("UPDATE tasks SET title=#{title}, description=#{description}, status=#{status}, " +
-            "priority=#{priority}, due_date=#{dueDate} WHERE id=#{id}")
+            "priority=#{priority}, due_date=#{dueDate}, position=#{position} WHERE id=#{id}")
     void update(Task task);
+
+    @Update("UPDATE tasks SET position = #{position} WHERE id = #{id}")
+    void updatePosition(@Param("id") Long id, @Param("position") Integer position);
 
     @Delete("DELETE FROM tasks WHERE id = #{id}")
     void delete(Long id);

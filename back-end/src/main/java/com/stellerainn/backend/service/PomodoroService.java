@@ -41,4 +41,8 @@ public class PomodoroService {
     public Integer getTodayCompletedCount(Long userId) {
         return pomodoroMapper.countTodayCompleted(userId);
     }
+
+    public Long getTodayFocusSeconds(Long userId) {
+        return pomodoroMapper.sumTodayDurationSeconds(userId);
+    }
 }

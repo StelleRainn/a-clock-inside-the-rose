@@ -30,3 +30,11 @@ export function deleteTask(id) {
     method: 'delete'
   })
 }
+
+export function reorderTasks(taskIds) {
+  return request({
+    url: '/tasks/reorder',
+    method: 'post',
+    data: taskIds
+  })
+}

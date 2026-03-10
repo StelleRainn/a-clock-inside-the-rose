@@ -15,6 +15,7 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
   const isRunning = ref(false)
   const isWorkSession = ref(localStorage.getItem('pomodoro_isWorkSession') !== 'false') // Default true
   const completedPomodoros = ref(0)
+  const todayFocusSeconds = ref(0) // New: Accurate duration
   const endTime = ref(parseInt(localStorage.getItem('pomodoro_endTime')) || null)
   const savedTimeLeft = ref(parseInt(localStorage.getItem('pomodoro_timeLeft')) || workDuration.value)
   const selectedTaskId = ref(null) // New: Bind task
@@ -166,8 +167,14 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
   async function fetchTodayCount() {
     if (userStore.user && userStore.user.id) {
       try {
-        const count = await getTodayPomodoroCount(userStore.user.id)
-        completedPomodoros.value = count
+        const res = await getTodayPomodoroCount(userStore.user.id)
+        if (res && typeof res === 'object') {
+          completedPomodoros.value = res.count || 0
+          todayFocusSeconds.value = res.totalSeconds || 0
+        } else {
+          // Fallback for old API response (just integer)
+          completedPomodoros.value = res || 0
+        }
       } catch (e) {
         console.error(e)
       }
@@ -181,6 +188,7 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
     isRunning,
     isWorkSession,
     completedPomodoros,
+    todayFocusSeconds,
     formattedTime,
     progressPercentage,
     selectedTaskId,

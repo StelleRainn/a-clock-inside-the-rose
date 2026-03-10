@@ -6,7 +6,9 @@ import com.stellerainn.backend.service.PomodoroService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/pomodoro")
@@ -26,7 +28,14 @@ public class PomodoroController {
     }
 
     @GetMapping("/today-count")
-    public Result<Integer> getTodayCount(@RequestParam Long userId) {
-        return Result.success(pomodoroService.getTodayCompletedCount(userId));
+    public Result<Map<String, Object>> getTodayStats(@RequestParam Long userId) {
+        Integer count = pomodoroService.getTodayCompletedCount(userId);
+        Long seconds = pomodoroService.getTodayFocusSeconds(userId);
+        
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("count", count);
+        stats.put("totalSeconds", seconds);
+        
+        return Result.success(stats);
     }
 }

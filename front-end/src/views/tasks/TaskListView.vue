@@ -37,20 +37,30 @@
         </el-select>
 
         <el-select v-model="sortBy" placeholder="Sort by" style="width: 150px">
+          <el-option label="Manual (Drag)" value="manual" />
           <el-option label="Created Date" value="createdAt" />
           <el-option label="Due Date" value="dueDate" />
           <el-option label="Priority" value="priority" />
           <el-option label="Status" value="status" />
         </el-select>
 
-        <el-button @click="toggleSortOrder" :icon="sortOrder === 'asc' ? 'SortUp' : 'SortDown'">
+        <el-button @click="toggleSortOrder" :icon="sortOrder === 'asc' ? 'SortUp' : 'SortDown'" :disabled="sortBy === 'manual'">
           {{ sortOrder === 'asc' ? 'Asc' : 'Desc' }}
         </el-button>
+
+        <el-button @click="resetFilters" icon="RefreshLeft" type="info" plain>Reset</el-button>
       </div>
 
       <el-tabs v-model="activeName">
         <el-tab-pane label="List View" name="list">
-          <el-table :data="filteredTasks" style="width: 100%" v-loading="loading" row-key="id">
+          <el-table 
+            :data="filteredTasks" 
+            style="width: 100%" 
+            v-loading="loading" 
+            row-key="id"
+            @row-click="handleEdit"
+            class="draggable-table"
+          >
             <el-table-column type="expand">
               <template #default="props">
                 <div class="subtask-container">
@@ -83,7 +93,19 @@
               </template>
             </el-table-column>
 
-            <el-table-column prop="title" label="Task Name" />
+            <el-table-column prop="title" label="Task Name">
+              <template #default="scope">
+                <span :class="{'overdue-text': isOverdue(scope.row), 'neardue-text': isNearDue(scope.row)}">
+                  {{ scope.row.title }}
+                </span>
+                <el-tooltip v-if="isOverdue(scope.row)" content="Overdue!" placement="top">
+                  <el-icon class="alert-icon overdue"><Warning /></el-icon>
+                </el-tooltip>
+                <el-tooltip v-else-if="isNearDue(scope.row)" content="Due soon!" placement="top">
+                  <el-icon class="alert-icon neardue"><WarningFilled /></el-icon>
+                </el-tooltip>
+              </template>
+            </el-table-column>
             <el-table-column label="Tags" width="200">
               <template #default="scope">
                 <el-tag 
@@ -111,7 +133,9 @@
             </el-table-column>
             <el-table-column prop="dueDate" label="Due Date" width="180">
                <template #default="scope">
-                 {{ formatDate(scope.row.dueDate) }}
+                 <span :class="{'overdue-text': isOverdue(scope.row), 'neardue-text': isNearDue(scope.row)}">
+                   {{ formatDate(scope.row.dueDate) }}
+                 </span>
                </template>
             </el-table-column>
             <el-table-column label="Actions" width="200">
@@ -137,8 +161,12 @@
                 class="draggable-area"
               >
                 <template #item="{ element }">
-                  <div class="kanban-card" @click="handleEdit(element)">
-                    <div class="card-title">{{ element.title }}</div>
+                  <div class="kanban-card" @click="handleEdit(element)" :class="{'overdue-card': isOverdue(element), 'neardue-card': isNearDue(element)}">
+                    <div class="card-title">
+                      {{ element.title }}
+                      <el-icon v-if="isOverdue(element)" class="alert-icon overdue-kanban"><Warning /></el-icon>
+                      <el-icon v-else-if="isNearDue(element)" class="alert-icon neardue-kanban"><WarningFilled /></el-icon>
+                    </div>
                     
                     <!-- Subtask Progress in Kanban -->
                     <div class="subtask-progress" v-if="element.subtasks && element.subtasks.length > 0">
@@ -168,7 +196,9 @@
                     </div>
                     <div class="card-meta">
                       <el-tag size="small" :type="getPriorityType(element.priority)">{{ element.priority }}</el-tag>
-                      <span class="card-date" v-if="element.dueDate">{{ formatDateShort(element.dueDate) }}</span>
+                      <span class="card-date" v-if="element.dueDate" :class="{'overdue-text': isOverdue(element), 'neardue-text': isNearDue(element)}">
+                        {{ formatDateShort(element.dueDate) }}
+                      </span>
                     </div>
                   </div>
                 </template>
@@ -257,13 +287,14 @@
 <script setup>
 import { ref, onMounted, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { getTasks, createTask, updateTask, deleteTask } from '@/api/task'
+import { getTasks, createTask, updateTask, deleteTask, reorderTasks } from '@/api/task'
 import { getTags, createTag } from '@/api/tag'
 import { createSubtask, updateSubtask, deleteSubtask } from '@/api/subtask'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import draggable from 'vuedraggable'
-import { Search, SortUp, SortDown, Delete } from '@element-plus/icons-vue'
+import Sortable from 'sortablejs'
+import { Search, SortUp, SortDown, Delete, Warning, WarningFilled, RefreshLeft } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const activeName = ref('list')
@@ -288,8 +319,8 @@ const selectedTagIds = ref([])
 // Filters & Sort
 const searchQuery = ref('')
 const selectedFilterTags = ref([])
-const sortBy = ref('createdAt')
-const sortOrder = ref('desc') // asc or desc
+const sortBy = ref('manual') // Default manual sort
+const sortOrder = ref('asc') // asc or desc
 
 const taskForm = reactive({
   title: '',
@@ -305,7 +336,7 @@ const fetchTasks = async () => {
   try {
     const data = await getTasks(userStore.user.id)
     tableData.value = data || []
-  } catch (error) {
+  } catch {
     ElMessage.error('Failed to fetch tasks')
   } finally {
     loading.value = false
@@ -344,7 +375,7 @@ const submitSubtask = async () => {
     currentParentTask.value.subtasks.push(res)
     ElMessage.success('Subtask added')
     subtaskDialogVisible.value = false
-  } catch (e) {
+  } catch {
     ElMessage.error('Failed to add subtask')
   }
 }
@@ -352,7 +383,7 @@ const submitSubtask = async () => {
 const handleSubtaskStatusChange = async (sub, val) => {
   try {
     await updateSubtask(sub.id, { ...sub, completed: val })
-  } catch (e) {
+  } catch {
     ElMessage.error('Failed to update subtask')
     sub.completed = !val // Revert on error
   }
@@ -363,7 +394,7 @@ const handleDeleteSubtask = async (subId, parentTask) => {
     await deleteSubtask(subId)
     parentTask.subtasks = parentTask.subtasks.filter(s => s.id !== subId)
     ElMessage.success('Subtask deleted')
-  } catch (e) {
+  } catch {
     ElMessage.error('Failed to delete subtask')
   }
 }
@@ -372,6 +403,20 @@ const calculateProgress = (subtasks) => {
   if (!subtasks || subtasks.length === 0) return 0
   const completed = subtasks.filter(s => s.completed).length
   return Math.round((completed / subtasks.length) * 100)
+}
+
+// Due Date Alerts
+const isOverdue = (task) => {
+  if (task.status === 'DONE' || !task.dueDate) return false
+  return new Date(task.dueDate) < new Date()
+}
+
+const isNearDue = (task) => {
+  if (task.status === 'DONE' || !task.dueDate) return false
+  const due = new Date(task.dueDate)
+  const now = new Date()
+  const diffHours = (due - now) / (1000 * 60 * 60)
+  return diffHours > 0 && diffHours <= 24 // Within 24 hours
 }
 
 // Computed Filtered Tasks
@@ -397,22 +442,31 @@ const filteredTasks = computed(() => {
   }
 
   // 3. Sort
+  if (sortBy.value === 'manual') {
+    // Already sorted by position from backend or maintain current order
+    // However, if filters are active, we can't really "manual sort" effectively
+    // But we return result as is (which is sorted by position from backend initially)
+    return result
+  }
+
   result.sort((a, b) => {
     let valA, valB
     
     switch (sortBy.value) {
-      case 'priority':
+      case 'priority': {
         // Custom order: HIGH > MEDIUM > LOW
         const pMap = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 }
         valA = pMap[a.priority] || 0
         valB = pMap[b.priority] || 0
         break
-      case 'status':
+      }
+      case 'status': {
         // Custom order: TODO > IN_PROGRESS > DONE
         const sMap = { 'TODO': 1, 'IN_PROGRESS': 2, 'DONE': 3 }
         valA = sMap[a.status] || 0
         valB = sMap[b.status] || 0
         break
+      }
       case 'dueDate':
         valA = a.dueDate ? new Date(a.dueDate).getTime() : (sortOrder.value === 'asc' ? Infinity : -Infinity)
         valB = b.dueDate ? new Date(b.dueDate).getTime() : (sortOrder.value === 'asc' ? Infinity : -Infinity)
@@ -435,7 +489,80 @@ const toggleSortOrder = () => {
   sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
 }
 
-// ... (Rest of CRUD functions: handleTagChange, openCreateDialog, handleEdit, handleDelete, submitTask, etc. - Keep same)
+const resetFilters = () => {
+  searchQuery.value = ''
+  selectedFilterTags.value = []
+  sortBy.value = 'manual'
+  sortOrder.value = 'asc'
+}
+
+// Drag & Drop for List View
+let sortableInstance = null
+
+const initSortable = () => {
+  const table = document.querySelector('.draggable-table .el-table__body-wrapper tbody')
+  if (!table) return
+
+  // Destroy previous instance if exists
+  if (sortableInstance) sortableInstance.destroy()
+
+  // Only enable if manual sort and no filters
+  if (sortBy.value !== 'manual' || searchQuery.value || selectedFilterTags.value.length > 0) {
+    return
+  }
+
+  sortableInstance = Sortable.create(table, {
+    handle: '.el-table__row', // Drag whole row
+    animation: 150,
+    onEnd: async ({ newIndex, oldIndex }) => {
+      if (newIndex === oldIndex) return
+      
+      // Move item in local array
+      const targetRow = filteredTasks.value.splice(oldIndex, 1)[0]
+      filteredTasks.value.splice(newIndex, 0, targetRow)
+      
+      // Since filteredTasks is computed, we should modify tableData actually?
+      // But tableData is the source. 
+      // If we are in 'manual' mode and no filters, filteredTasks IS tableData (reference copy?)
+      // Actually filteredTasks returns a NEW array: `let result = [...tableData.value]`
+      // So modifying filteredTasks won't affect tableData or trigger re-render properly if it's computed.
+      
+      // Correct approach: Modify tableData directly
+      const movedItem = tableData.value.splice(oldIndex, 1)[0]
+      tableData.value.splice(newIndex, 0, movedItem)
+
+      // Get new order of IDs
+      const newOrderIds = tableData.value.map(t => t.id)
+      
+      try {
+        await reorderTasks(newOrderIds)
+        // ElMessage.success('Order updated')
+      } catch {
+        ElMessage.error('Failed to update order')
+        fetchTasks() // Revert
+      }
+    }
+  })
+}
+
+// Watchers to re-init or destroy sortable
+import { watch, nextTick } from 'vue'
+
+watch([sortBy, searchQuery, selectedFilterTags, activeName, loading], () => {
+  nextTick(() => {
+    if (activeName.value === 'list' && !loading.value) {
+      initSortable()
+    } else if (sortableInstance) {
+      sortableInstance.destroy()
+      sortableInstance = null
+    }
+  })
+})
+
+onMounted(() => {
+  fetchTasks()
+  fetchTags()
+})
 
 const handleTagChange = async (val) => {
   // Check if new tag created
@@ -454,7 +581,7 @@ const handleTagChange = async (val) => {
         if (index !== -1) {
           selectedTagIds.value[index] = newTag.id
         }
-      } catch (e) {
+      } catch {
         ElMessage.error('Failed to create tag: ' + name)
       }
     }
@@ -507,7 +634,7 @@ const handleDelete = (row) => {
         await deleteTask(row.id)
         ElMessage.success('Delete completed')
         fetchTasks()
-      } catch (e) {
+      } catch {
         ElMessage.error('Delete failed')
       }
     })
@@ -545,7 +672,7 @@ const submitTask = async () => {
     }
     dialogVisible.value = false
     fetchTasks()
-  } catch (e) {
+  } catch {
     ElMessage.error('Operation failed')
   }
 }
@@ -616,7 +743,7 @@ const handleDragChange = async (evt, newStatus) => {
       await updateTask(task.id, { ...task, status: newStatus, userId: userStore.user.id })
       // No need to fetchTasks() if optimistic update works, but for safety we can
       // fetchTasks() 
-    } catch (e) {
+    } catch {
       ElMessage.error('Failed to update task status')
       fetchTasks() // Revert on error
     }
@@ -652,7 +779,7 @@ onMounted(() => {
 .kanban-column {
   flex: 1;
   min-width: 250px;
-  background-color: #f5f7fa;
+  background-color: var(--el-bg-color-page);
   border-radius: 8px;
   padding: 10px;
   display: flex;
@@ -668,20 +795,20 @@ onMounted(() => {
 .column-header h3 {
   margin: 0;
   font-size: 16px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 .draggable-area {
   flex: 1;
   min-height: 100px;
 }
 .kanban-card {
-  background-color: white;
+  background-color: var(--el-bg-color);
   border-radius: 4px;
   padding: 10px;
   margin-bottom: 10px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, background-color 0.3s;
 }
 .kanban-card:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -689,7 +816,10 @@ onMounted(() => {
 .card-title {
   font-weight: 500;
   margin-bottom: 8px;
-  color: #303133;
+  color: var(--el-text-color-primary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 .card-meta {
   display: flex;
@@ -698,7 +828,7 @@ onMounted(() => {
 }
 .card-date {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 .card-tags {
   margin-bottom: 8px;
@@ -713,7 +843,7 @@ onMounted(() => {
 /* Subtask Styles */
 .subtask-container {
   padding: 10px 20px;
-  background-color: #f9f9f9;
+  background-color: var(--el-fill-color-light);
   border-radius: 4px;
 }
 .subtask-header {
@@ -725,7 +855,7 @@ onMounted(() => {
 .subtask-header h4 {
   margin: 0;
   font-size: 14px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 .subtask-list {
   list-style: none;
@@ -737,18 +867,18 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 5px 0;
-  border-bottom: 1px dashed #e4e7ed;
+  border-bottom: 1px dashed var(--el-border-color-lighter);
 }
 .subtask-item:last-child {
   border-bottom: none;
 }
 .completed-text {
   text-decoration: line-through;
-  color: #909399;
+  color: var(--el-text-color-placeholder);
 }
 .no-subtasks {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-style: italic;
 }
 
@@ -764,6 +894,33 @@ onMounted(() => {
 }
 .subtask-count {
   font-size: 10px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
+}
+
+/* Alert Styles */
+.overdue-text {
+  color: #f56c6c;
+  font-weight: bold;
+}
+.neardue-text {
+  color: #e6a23c;
+  font-weight: bold;
+}
+.alert-icon {
+  margin-left: 5px;
+  vertical-align: middle;
+}
+.alert-icon.overdue {
+  color: #f56c6c;
+}
+.alert-icon.neardue {
+  color: #e6a23c;
+}
+/* Kanban Card Alert Borders */
+.kanban-card.overdue-card {
+  border-left: 3px solid #f56c6c;
+}
+.kanban-card.neardue-card {
+  border-left: 3px solid #e6a23c;
 }
 </style>

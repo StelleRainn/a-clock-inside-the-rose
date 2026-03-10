@@ -120,6 +120,20 @@
         </el-radio-group>
       </div>
 
+      <!-- Zen Note Input -->
+      <div v-if="isImmersive" class="zen-note-container">
+        <el-input 
+          v-model="zenNote" 
+          placeholder="Capture a thought (Zen Note)..." 
+          class="zen-input"
+          @keyup.enter="saveZenNote"
+        >
+          <template #append>
+            <el-button @click="saveZenNote" :icon="Check" />
+          </template>
+        </el-input>
+      </div>
+
       <div class="stats-footer" v-if="!isImmersive">
         <p>Completed Pomodoros Today: {{ pomodoroStore.completedPomodoros }}</p>
       </div>
@@ -135,7 +149,9 @@
 import { computed, ref, watch, onMounted } from 'vue'
 import { usePomodoroStore } from '@/stores/pomodoro'
 import { useUserStore } from '@/stores/user'
-import { getTasks } from '@/api/task'
+import { getTasks, createTask } from '@/api/task'
+import { Check, FullScreen, Close, VideoPlay, VideoPause, Refresh } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
 const pomodoroStore = usePomodoroStore()
 const userStore = useUserStore()
@@ -147,6 +163,7 @@ const rainAudio = ref(null)
 const cafeAudio = ref(null)
 const tasks = ref([])
 const selectedTask = ref(pomodoroStore.selectedTaskId)
+const zenNote = ref('')
 
 // Sync sessionMode with store state
 watch(() => pomodoroStore.isWorkSession, (isWork) => {
@@ -172,10 +189,10 @@ const toggleImmersive = () => {
   isImmersive.value = !isImmersive.value
   // Optional: Enter browser fullscreen
   if (isImmersive.value) {
-    document.documentElement.requestFullscreen().catch(e => {})
+    document.documentElement.requestFullscreen().catch(() => {})
   } else {
     if (document.fullscreenElement) {
-      document.exitFullscreen().catch(e => {})
+      document.exitFullscreen().catch(() => {})
     }
   }
 }
@@ -192,14 +209,37 @@ const playNoise = (val) => {
   }
 }
 
+const saveZenNote = async () => {
+  if (!zenNote.value.trim()) return
+  if (!userStore.user || !userStore.user.id) {
+    ElMessage.warning('Please login to save notes')
+    return
+  }
+
+  try {
+    await createTask({
+      userId: userStore.user.id,
+      title: '[Zen Note] ' + zenNote.value,
+      status: 'TODO',
+      priority: 'LOW',
+      description: 'Captured during focus session'
+    })
+    ElMessage.success('Note saved to Inbox')
+    zenNote.value = ''
+    fetchUserTasks() // Refresh task list
+  } catch {
+    ElMessage.error('Failed to save note')
+  }
+}
+
 const fetchUserTasks = async () => {
   if (userStore.user && userStore.user.id) {
     try {
       // Fetch only IN_PROGRESS or TODO tasks ideally, but for now fetch all
       const data = await getTasks(userStore.user.id)
       tasks.value = data.filter(t => t.status !== 'DONE') || []
-    } catch (e) {
-      console.error(e)
+    } catch {
+      // ignore
     }
   }
 }
@@ -286,7 +326,7 @@ onMounted(() => {
 .timer-text {
   font-size: 2.5rem;
   margin: 0;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .immersive-text {
@@ -301,7 +341,7 @@ onMounted(() => {
 
 .duration-label {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   display: block;
   margin-bottom: 5px;
   text-align: left;
@@ -318,16 +358,16 @@ onMounted(() => {
 }
 
 .status-text {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
   margin-bottom: 10px;
 }
 
 .stats-footer {
   margin-top: 20px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--el-border-color-lighter);
   padding-top: 10px;
-  color: #606266;
+  color: var(--el-text-color-regular);
 }
 
 .immersive-header {
@@ -359,5 +399,27 @@ onMounted(() => {
 .noise-controls p {
   margin-bottom: 10px;
   font-size: 14px;
+}
+
+.zen-note-container {
+  margin-top: 40px;
+  width: 300px;
+}
+
+.zen-input :deep(.el-input__wrapper) {
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.zen-input :deep(.el-input__inner) {
+  color: white;
+}
+
+.zen-input :deep(.el-input-group__append) {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: none;
+  color: white;
 }
 </style>

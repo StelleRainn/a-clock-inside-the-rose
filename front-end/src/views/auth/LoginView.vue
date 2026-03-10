@@ -51,7 +51,7 @@ const onSubmit = async () => {
     } else {
       ElMessage.error('Login failed')
     }
-  } catch (e) {
+  } catch {
     ElMessage.error('An error occurred')
   } finally {
     loading.value = false
@@ -79,7 +79,7 @@ const onRegister = async () => {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: #f0f2f5;
+  background-color: var(--el-bg-color-page);
 }
 .login-card {
   width: 400px;
