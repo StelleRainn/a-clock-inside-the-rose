@@ -18,6 +18,21 @@
 
 ---
 
+## Phase 5 智能化成果归档 (New)
+
+### AI 助手 (ACIR Intelligent)
+- [x] **架构设计**: 采用前端 Store 管理状态 + 后端 REST API 持久化存储的架构。
+- [x] **会话管理**: 实现了类似 ChatGPT 的左侧会话列表，支持新建、切换、删除会话。
+- [x] **上下文注入**: 自动读取 `PomodoroStore` (今日专注时长) 和 `TaskStore` (Top 5 待办)，打造“懂你的”效率顾问。
+- [x] **安全性**: 实现了 API Key 的数据库存储方案，用户在 Profile 页面配置 Key，彻底杜绝前端硬编码泄露风险。
+- [x] **UI/UX 极致打磨**:
+  - 全屏沉浸式布局 (Full-bleed Layout)。
+  - Glassmorphism 输入框 + 底部渐变遮罩。
+  - 隐藏式滚动条设计。
+  - 响应式侧边栏 (Mobile Friendly)。
+
+---
+
 ## 待办与灵感 (Backlog for Phase 5+)
 
 ### 移动端适配 (Mobile Adaptation)

@@ -81,13 +81,15 @@
   - [x] **Task Selector**: 首页集成任务选择器。
   - [x] **Calendar View**: 独立的数据回顾页面。
 
-## Milestone 5: 智能化与全平台 (Future)
+## Milestone 5: 智能化与全平台 (In Progress)
 > 目标：引入 AI 能力，实现移动端适配，完善系统部署。
 
-- [ ] **AI Assistant (AI 助手)**:
-  - [ ] **LLM Integration**: 接入大模型 API。
-  - [ ] **Smart Suggestions**: 分析用户习惯，给出最佳专注时间建议。
-  - [ ] **Daily Summary**: AI 生成每日/每周专注报告。
+- [x] **AI Assistant (AI 助手)**:
+  - [x] **LLM Integration**: 接入 Google Gemini 2.0 Flash 模型，支持 Markdown 渲染与流式对话。
+  - [x] **Context Awareness**: 自动注入用户今日专注数据与 Top 待办任务，实现个性化建议。
+  - [x] **History Management**: 完整的会话管理（新建/删除/切换），支持历史记录持久化存储 (MySQL)。
+  - [x] **Security**: API Key 跟随账户配置（加密存储于数据库），移除前端硬编码。
+  - [x] **Immersive UI**: 全屏 Glassmorphism 设计，类 ChatGPT 的极简交互体验。
 - [ ] **Mobile Adaptation (移动端适配)**:
   - [ ] **Responsive Layout**: 适配手机屏幕尺寸。
   - [ ] **Touch Optimization**: 优化触摸交互体验。

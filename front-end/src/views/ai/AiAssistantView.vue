@@ -141,7 +141,7 @@
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useAiStore } from '@/stores/ai'
 import { useUserStore } from '@/stores/user'
-import { Cpu, UserFilled, Position, ChatDotRound, Plus, ChatDotSquare, Delete, Menu, Close } from '@element-plus/icons-vue'
+import { Cpu, Position, ChatDotRound, Plus, ChatDotSquare, Delete, Menu, Close } from '@element-plus/icons-vue'
 import MarkdownIt from 'markdown-it'
 import { ElMessageBox, ElMessage } from 'element-plus'
 
@@ -380,16 +380,12 @@ onMounted(() => {
   padding-bottom: 120px; /* Space for input */
   
   /* Hide scrollbar for cleaner look */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0,0,0,0.1) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .chat-container::-webkit-scrollbar {
-  width: 6px;
-}
-.chat-container::-webkit-scrollbar-thumb {
-  background-color: rgba(0,0,0,0.1);
-  border-radius: 3px;
+  display: none;
 }
 
 /* Empty State */
@@ -534,30 +530,41 @@ onMounted(() => {
 
 /* Input Area */
 .input-area {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 800px;
-  padding: 0 20px;
+  position: fixed;
+  bottom: 0;
+  left: 260px; /* Offset by sidebar width */
+  width: calc(100vw - 260px);
+  max-width: none;
+  padding: 0 0 20px;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Gradient background mask to hide scrolling content */
+  background: linear-gradient(to bottom, transparent, var(--el-bg-color) 40%);
+  padding-top: 40px; /* Space for gradient fade */
+}
+.dark .input-area {
+  background: linear-gradient(to bottom, transparent, var(--el-bg-color-overlay) 40%);
 }
 
 .input-wrapper {
   position: relative;
-  background: var(--el-bg-color); /* Solid background instead of glass for readability */
+  width: 100%;
+  max-width: 800px;
+  background: rgba(255, 255, 255, 0.65); /* Restored glassmorphism */
+  backdrop-filter: blur(20px);
   border-radius: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--el-border-color-lighter);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: flex-end;
   padding: 8px;
   transition: all 0.3s;
 }
 .dark .input-wrapper {
-  background: var(--el-bg-color-overlay);
-  border-color: var(--el-border-color-darker);
+  background: rgba(40, 40, 40, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .input-wrapper:focus-within {
