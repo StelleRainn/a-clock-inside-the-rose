@@ -1,0 +1,75 @@
+题目：基于 Spring Boot + Vue 的个人效率中心系统设计与实现
+
+摘要
+
+随着移动互联网技术的飞速发展与信息爆炸时代的到来，现代人的注意力资源面临着前所未有的碎片化挑战。如何在纷繁复杂的数字环境中保持深度工作（Deep Work）状态，并有效管理个人事务，已成为提升个体竞争力的关键问题。传统的任务清单工具（Todo List）往往侧重于事务的罗列与排期，缺乏对执行过程的引导；而单一的番茄钟应用（Pomodoro Timer）虽然能够辅助专注，却难以与长期的任务规划及数据分析形成闭环。针对现有工具功能割裂、缺乏数据驱动与智能化辅助的痛点，本文设计并实现了一个集“任务管理、沉浸式专注、多维量化分析、智能辅助诊断”于一体的个人效率中心系统——A Clock Inside the Rose (ACIR)。
+
+本系统采用前后端分离的现代 Web 架构进行开发。后端基于 Java 语言的 Spring Boot 3 框架，利用 MyBatis 实现了高效的数据持久化操作，并采用 RESTful API 规范设计接口，保障了系统的可扩展性与安全性；前端采用 Vue 3 (Composition API) 框架，结合 Vite 构建工具与 Element Plus 组件库，构建了高性能的单页应用（SPA）。在数据存储方面，选用 MySQL 8.0 关系型数据库，针对复杂的统计查询进行了索引优化与聚合算法设计。
+
+本文的核心工作与创新点主要体现在以下四个方面：首先，在交互设计上，提出了“沉浸式心流（Immersive Flow）”的设计理念，突破了传统管理后台的刻板布局，采用 Glassmorphism（毛玻璃）设计语言与首屏 Hero Timer 布局，通过动态背景色提取算法与极简 UI 减少视觉干扰，引导用户自然进入专注状态；其次，在数据量化方面，引入了“自我量化（Quantified Self）”机制，通过后端复杂的聚合查询，实现了 GitHub 风格的年度热力图（Heatmap）与任务标签分布玫瑰图（Rose Chart），为用户提供直观的行为数据反馈；第三，在智能化应用上，探索了生成式 AI 在垂直效率场景的落地，接入 Google Gemini API 并创新性地应用了“上下文注入（Context Injection）”技术，使 AI 助手能够读取用户的实时专注数据与待办任务状态，从而提供极具针对性的效率诊断与建议，而非通用的闲聊；最后，系统实现了深度的多端适配，通过响应式布局与 Touch 事件优化，在移动端提供了媲美原生应用的流畅体验，实现了“随时随地”的效率管理。
+
+测试结果表明，该系统功能完备、运行稳定，各模块响应迅速，成功实现了预期的各项设计目标。本研究不仅验证了基于 Spring Boot + Vue 的全栈技术架构在中小型应用开发中的高效性与灵活性，也为人机交互设计（HCI）与大语言模型（LLM）在个人效能工具领域的融合应用提供了有价值的工程实践参考。
+
+关键词：Spring Boot；Vue 3；个人效率中心；沉浸式体验；上下文注入；数据可视化
+
+Abstract
+
+With the rapid development of mobile Internet technology and the advent of the information explosion era, modern people's attention resources are facing unprecedented challenges of fragmentation. How to maintain a state of "Deep Work" in a complex digital environment and effectively manage personal affairs has become a key issue for improving individual competitiveness. Traditional Todo List tools often focus on the listing and scheduling of tasks, lacking guidance on the execution process; while single Pomodoro Timer applications can assist in focusing, they are difficult to form a closed loop with long-term task planning and data analysis. Addressing the pain points of existing tools such as functional fragmentation, lack of data drive, and lack of intelligent assistance, this thesis designs and implements a personal efficiency center system integrating "task management, immersive focus, multi-dimensional quantitative analysis, and intelligent auxiliary diagnosis" — A Clock Inside the Rose (ACIR).
+
+The system is developed using a modern Web architecture with separation of front-end and back-end. The back-end is based on the Spring Boot 3 framework of the Java language, utilizes MyBatis to implement efficient data persistence operations, and adopts the RESTful API specification to design interfaces, ensuring the scalability and security of the system. The front-end adopts the Vue 3 (Composition API) framework, combined with the Vite build tool and Element Plus component library, to build a high-performance Single Page Application (SPA). In terms of data storage, the MySQL 8.0 relational database is selected, and index optimization and aggregation algorithm design are carried out for complex statistical queries.
+
+The core work and innovations of this thesis are mainly reflected in the following four aspects: First, in interaction design, the design concept of "Immersive Flow" is proposed, breaking through the rigid layout of traditional management backends, adopting Glassmorphism design language and the first-screen Hero Timer layout, reducing visual interference through dynamic background color extraction algorithms and minimalist UI, and guiding users to naturally enter a state of focus. Second, in terms of data quantification, the "Quantified Self" mechanism is introduced. Through complex backend aggregation queries, GitHub-style annual Heatmaps and task tag distribution Rose Charts are implemented, providing users with intuitive behavioral data feedback. Third, in intelligent application, the landing of Generative AI in vertical efficiency scenarios is explored. By accessing the Google Gemini API and innovatively applying "Context Injection" technology, the AI assistant can read the user's real-time focus data and pending task status, thereby providing highly targeted efficiency diagnosis and suggestions rather than generic chat. Finally, the system achieves deep multi-terminal adaptation, providing a smooth experience comparable to native applications on mobile terminals through responsive layout and Touch event optimization, realizing "anytime, anywhere" efficiency management.
+
+Test results show that the system has complete functions, stable operation, and rapid response of each module, successfully achieving the expected design goals. This research not only verifies the efficiency and flexibility of the full-stack technical architecture based on Spring Boot + Vue in the development of small and medium-sized applications but also provides valuable engineering practice references for the integrated application of Human-Computer Interaction (HCI) and Large Language Models (LLM) in the field of personal productivity tools.
+
+Keywords: Spring Boot; Vue 3; Personal Efficiency Center; Immersive Experience; Context Injection; Data Visualization
+
+第一章 绪论
+
+1.1 研究背景
+
+在当今高度互联的数字化社会中，信息技术的飞速进步虽然极大地丰富了人们获取知识与沟通交流的渠道，但也带来了前所未有的副作用——“注意力危机”。根据相关心理学研究表明，现代知识工作者在处理复杂任务时，频繁受到来自社交媒体、即时通讯软件以及各类新闻推送的干扰，导致注意力不断被打断。这种碎片化的工作模式不仅降低了任务完成的效率，更严重阻碍了人们进入“心流（Flow）”状态的能力，即一种全身心投入、忘我且高效的精神状态。美国计算机科学家卡尔·纽波特（Cal Newport）在其著作《深度工作》中指出，在人工智能与自动化日益普及的未来，能够进行深度思考与专注工作的能力将成为个体最稀缺的核心竞争力。
+
+然而，面对这一挑战，大多数人仍缺乏有效的数字化辅助手段。尽管市面上存在大量的“效率工具”，但绝大多数仍停留在“记录”层面。例如，传统的待办事项清单（Todo List）本质上是对未来事务的线性罗列，它们虽然帮助用户理清了“要做什么”，却很少关注用户在“怎么做”过程中的心理状态与执行质量。当清单上的任务越积越多，用户往往会产生焦虑感，而非成就感。另一方面，虽然番茄工作法（Pomodoro Technique）作为一种经典的时间管理方法被广泛推崇，但大多数番茄钟应用功能单一，缺乏与任务管理的深度整合，导致用户的专注行为与任务目标脱节，且缺乏长期的数据沉淀来反哺用户进行自我优化。
+
+因此，开发一套能够有机融合任务规划、执行引导、数据反馈与智能辅助的综合性个人效率中心系统，不仅是解决个人时间管理痛点的现实需求，也是探索技术如何更人性化地服务于人类认知的有益尝试。
+
+1.2 国内外研究现状
+
+在个人效率与时间管理工具领域，国内外的产品与研究呈现出百花齐放但各有侧重的态势。
+
+1.2.1 国外研究现状
+在欧美市场，SaaS（软件即服务）模式的生产力工具发展较为成熟。以 Todoist、Things 为代表的任务管理软件，在交互细节与跨平台同步方面做到了极致，它们强调 GTD（Getting Things Done）理念的落地，通过标签、过滤器与自然语言处理技术，帮助用户高效地收集与整理任务。然而，这类工具普遍缺乏对“执行过程”的干预，用户点击“完成”按钮的瞬间即是交互的终点，缺乏对专注时长的统计与分析。
+另一方面，以 Forest 为代表的专注类应用，通过游戏化机制（如种树）激励用户保持专注，取得了巨大的商业成功。但这类应用往往功能单一，缺乏复杂的任务管理能力（如看板、子任务拆解），且数据分析维度较为有限，难以满足专业用户对自我量化（Quantified Self）的深度需求。
+此外，随着 Notion 等 All-in-One 笔记工具的兴起，用户开始尝试在一个系统中通过数据库自行搭建任务管理系统，但这不仅有着极高的学习门槛，且缺乏原生应用在计时、提醒等方面的即时交互体验。
+
+1.2.2 国内研究现状
+国内的效率工具市场近年来也涌现出滴答清单（TickTick）等优秀产品，它们在功能整合上做出了一定尝试，例如在清单应用中内置番茄钟功能。然而，从学术研究与开源社区的角度来看，针对此类系统的研究多集中在单一功能的实现上。现有的相关毕业设计或工程实践项目，往往由于缺乏完整的设计理念支撑，容易陷入“功能堆砌”的误区——即简单地将一个 CRUD（增删改查）后台与一个倒计时器拼接在一起。
+在技术实现上，大多数现有的开源项目界面风格较为陈旧，多采用标准的 Admin 后台模板（如 Element Admin），缺乏对用户体验（UX）尤其是“沉浸式体验”的深入思考。同时，在数据可视化方面，鲜有系统能够提供类似 GitHub Contribution Graph 这样直观且具有激励性的热力图表。更重要的是，在生成式 AI（AIGC）爆发的背景下，如何将大语言模型（LLM）与个人效率数据相结合，提供个性化的智能建议，目前在开源领域仍处于起步探索阶段。
+
+1.2.3 现有问题总结
+综上所述，当前的个人效率工具主要存在以下问题：首先，功能割裂导致管理与执行分离，缺乏统一的工作流，用户常常需要在清单软件与计时软件之间来回切换；其次，数据孤岛现象严重，用户的专注数据未能有效转化为可视化的行为洞察；第三，体验僵化，界面设计偏向B端管理后台，缺乏C端应用应有的沉浸感与情感化设计；最后，智能缺失，目前的工具大多缺乏基于用户上下文数据的智能化辅助功能。
+
+1.3 研究目标与意义
+
+1.3.1 研究目标
+本课题旨在设计并实现一个基于 Spring Boot + Vue 前后端分离架构的个人效率中心系统——A Clock Inside the Rose (ACIR)。该系统的核心目标是打破“管理”与“专注”的界限，构建一个集任务规划、沉浸式执行、多维数据分析与 AI 智能辅助于一体的闭环生态。具体目标包括：构建沉浸式工作流，通过 Glassmorphism 设计语言与 Hero Timer 布局，打造无干扰的专注空间；实现深度任务管理，支持看板视图（Kanban）、子任务拆解与多维标签系统；提供多维数据洞察，基于 ECharts 实现热力图、玫瑰图等高阶图表，实现自我量化；探索 AI 垂直应用，利用 Google Gemini API 与上下文注入技术，打造懂用户的智能效率助手；验证全栈工程能力，实现一套高可用、可扩展、多端适配的 Web 系统架构。
+
+1.3.2 研究意义
+在工程实践层面，本系统是一个典型的前后端分离全栈项目，涵盖了从数据库设计、RESTful API 开发、复杂 SQL 优化到前端状态管理、组件封装、响应式布局及第三方 AI 服务接入的完整软件开发生命周期。通过本课题的研究，能够全面验证 Spring Boot 与 Vue 3 技术栈在中小型 Web 应用开发中的高效性与稳定性，为相关领域的工程实践提供参考范例。
+在学术探索层面，本课题尝试将人机交互（HCI）中的“心流”理论应用于 Web 界面设计，探索如何通过 UI/UX 设计引导用户行为。同时，本项目也是生成式 AI 在垂直细分领域（个人效率）的一次落地尝试，对于研究如何利用 LLM 解决具体场景下的个性化问题具有一定的探索价值。
+在社会现实层面，在快节奏的现代生活中，提供一个免费、开源且功能强大的效率工具，有助于帮助用户重拾专注力，缓解信息焦虑，提升工作与学习效率，具有积极的社会价值。
+
+1.4 论文结构安排
+
+本文共分为七章，各章节内容安排如下：
+第一章 绪论：阐述研究背景与意义，分析国内外研究现状，明确本课题的研究目标与主要工作。
+第二章 相关技术介绍：详细介绍系统开发所涉及的核心技术，包括 Spring Boot 后端框架、Vue 3 前端框架、MySQL 数据库、Glassmorphism 设计实现以及 Google Gemini AI 接口技术。
+第三章 系统需求分析：从业务流程、功能性需求与非功能性需求三个维度对系统进行详细分析，明确系统的功能边界与性能指标。
+第四章 系统设计：阐述系统的总体架构设计、数据库模型设计（E-R图）以及核心界面与交互设计（UI/UX），重点介绍“沉浸式心流”的设计理念。
+第五章 系统实现：深入剖析系统的核心功能模块实现，包括沉浸式番茄钟的状态机逻辑、交互式看板的拖拽算法、复杂数据统计的聚合查询以及 AI 助手的上下文注入实现等关键技术难点。
+第六章 系统测试：介绍系统的测试环境与策略，展示功能测试、兼容性测试与性能测试的结果，验证系统的可用性与稳定性。
+第七章 总结与展望：总结全文的研究工作与创新点，分析系统存在的不足，并对未来的改进方向（如 PWA 离线支持、多端同步等）进行展望。
+
+1.5 本章小结
+本章作为全文的开篇，首先从现代社会普遍存在的“注意力危机”切入，阐述了开发个人效率工具的现实背景与迫切需求。随后，通过对比分析国内外在效率管理领域的代表性产品与开源研究，指出了现有工具在功能割裂、数据孤岛及沉浸感不足等方面的局限性。在此基础上，明确了本课题的研究目标——打造集“管理、专注、分析、智能”于一体的 ACIR 系统，并从工程、学术及社会三个维度论述了该研究的深远意义。最后，简要概述了本文的整体组织结构，为后续章节的展开奠定了理论与逻辑基础。

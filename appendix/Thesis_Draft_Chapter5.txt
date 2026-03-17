@@ -1,0 +1,173 @@
+第五章 系统实现
+
+系统实现是将前文的设计蓝图转化为可运行代码的工程实践过程。本章将深入剖析 ACIR 系统核心功能模块的具体实现细节，重点阐述沉浸式番茄钟的状态机逻辑、交互式看板的拖拽算法、复杂数据统计的聚合查询、智能 AI 助手的上下文注入机制，以及系统在多端适配与安全防护方面的工程化实践。通过对关键代码片段与技术难点的解析，展示系统在“极致体验”与“数据驱动”目标下的技术落地路径。
+
+5.1 核心业务模块实现
+
+ACIR 的核心业务围绕“专注执行”与“任务管理”两大支柱展开。本节将详细介绍沉浸式番茄钟与交互式看板的实现逻辑。
+
+5.1.1 沉浸式番茄钟状态机
+番茄钟模块（Pomodoro Timer）是系统的“心脏”，其看似简单的倒计时背后，隐藏着一套完整的状态流转逻辑。为了解耦业务逻辑与视图渲染，系统在前端采用了 Pinia Store (`pomodoro.js`) 来集中管理计时器状态。
+
+核心状态定义如下：
+- `currentMode`: 当前专注模式，枚举值为 `pomodoro` (专注), `short-break` (短休), `long-break` (长休)。
+- `isRunning`: 布尔值，标识计时器是否正在运行。
+- `timeLeft`: 剩余秒数，用于实时倒计时显示。
+- `pomodorosSinceLongBreak`: 计数器，用于判断是否触发长休息（默认每 4 个番茄钟触发一次）。
+
+在计时精度的实现上，系统摒弃了简单的 `setTimeout` 或 `setInterval` 累加方案，因为浏览器主线程的阻塞可能导致严重的时间漂移。本系统采用了基于 `Date.now()` 的时间戳校准机制：在计时开始瞬间记录 `expectedEndTime`，并在每一秒的 `tick` 中重新计算 `expectedEndTime - Date.now()`，从而确保计时的绝对精准。
+
+```javascript
+// stores/pomodoro.js (核心计时逻辑)
+function startTimer(resume = false) {
+  if (isRunning.value && !resume) return
+  isRunning.value = true
+  
+  // 记录预计结束时间，确保持久化与抗刷新
+  if (!resume) {
+    endTime.value = Date.now() + timeLeft.value * 1000
+    // 持久化至 LocalStorage 以防止页面刷新丢失状态
+    localStorage.setItem('pomodoro_endTime', endTime.value)
+  }
+
+  // 使用 setInterval 并在每秒校准剩余时间
+  timerInterval = setInterval(() => {
+    const now = Date.now()
+    const remaining = Math.round((endTime.value - now) / 1000)
+    
+    if (remaining >= 0) {
+      timeLeft.value = remaining
+    } else {
+      // 倒计时结束，触发状态流转
+      completeSession()
+      clearInterval(timerInterval)
+    }
+  }, 1000)
+}
+```
+
+当 `completeSession()` 被触发时，状态机将根据当前模式自动流转。例如，若当前为 `pomodoro` 模式且 `pomodorosSinceLongBreak` 达到阈值（4次），系统会自动切换至 `long-break` 模式；否则切换至 `short-break`。这种自动化的流转机制极大降低了用户的操作负担，使其能持续保持在心流状态中。
+
+5.1.2 交互式看板拖拽算法
+任务管理模块采用了看板视图（Kanban View），允许用户通过拖拽卡片来直观地管理任务状态与优先级。前端基于 `Sortablejs` 库实现了流畅的拖拽交互，但其核心难点在于如何保证前后端数据的强一致性。
+
+后端数据库在 `tasks` 表中设计了一个 `position` 字段（整型）用于记录排序索引。当用户在前端完成一次拖拽操作（触发 `onEnd` 事件）时，系统会计算被拖拽卡片的新索引位置，并向后端发送包含 `taskId`、`newStatus` 和 `newIndex` 的原子更新请求。
+
+后端 `TaskService` 采用了“挤占式”重排序算法来处理该请求：
+1. **状态变更检测**：首先判断任务是否跨越了列（例如从 `TODO` 拖至 `DONE`）。若是，则更新任务的 `status` 字段。
+2. **位置重排**：假设任务从位置 A 移动到位置 B，为了维护 `position` 的连续性，系统会将位置 B 及其之后的所有任务的 `position` 值加 1，然后将当前任务的 `position` 设为 B。为了避免全表更新带来的性能开销，排序更新仅限定在同一个 `user_id` 和 `status` 的范围内，利用数据库事务（Transaction）确保操作的原子性。
+
+5.2 数据可视化与分析模块实现
+
+数据统计模块旨在将用户的抽象行为数据转化为直观的可视化洞察，通过“自我量化（Quantified Self）”激励用户坚持使用。
+
+5.2.1 复杂聚合查询与热力图
+年度热力图（Calendar Heatmap）需要展示用户在过去一年中每一天的专注时长。如果直接将所有 `pomodoro_records` 记录拉取到内存中处理，随着数据量的增长，系统性能将急剧下降。因此，本系统充分利用 MySQL 的聚合能力，直接在数据库层完成计算。
+
+在 MyBatis 的 XML 映射文件中，编写了如下高效查询语句：
+
+```xml
+<!-- resources/mapper/StatsMapper.xml -->
+<select id="getDailyStats" resultType="com.stellerainn.backend.entity.DailyStats">
+    SELECT 
+        DATE(start_time) as date, 
+        SUM(duration_seconds) as totalSeconds,
+        COUNT(id) as count
+    FROM pomodoro_records
+    WHERE user_id = #{userId}
+      AND start_time >= #{startDate}
+      AND status = 'COMPLETED'
+    GROUP BY DATE(start_time)
+    ORDER BY date ASC
+</select>
+```
+
+该查询直接返回按日期分组的统计结果，后端 Service 层只需将其转换为前端 ECharts 所需的 `[date, value]` 二维数组格式即可。前端组件 `WidgetHeatmap.vue` 接收到数据后，会根据 `totalSeconds` 的大小动态映射色阶（从浅绿到深绿），直观呈现用户的努力程度。
+
+5.2.2 标签分布与玫瑰图
+为了分析用户的时间分配结构，系统实现了南丁格尔玫瑰图（Nightingale Rose Chart）。由于 `tasks` 与 `tags` 是多对多关系，且专注记录关联的是 `task`，这涉及到了三表关联查询。为了优化性能，系统采用了“分步聚合”策略：首先聚合出每个任务的总专注时长，再根据任务关联的标签进行二次归类。这种处理方式避免了复杂的笛卡尔积查询，显著提升了大数据量下的响应速度。
+
+5.3 智能 AI 助手模块实现
+
+AI 助手模块是 ACIR 区别于传统效率工具的核心亮点。其实现不仅涉及与 Google Gemini API 的对接，更关键的是“上下文注入”机制的设计。
+
+5.3.1 上下文注入（Context Injection）
+为了让 AI “懂”用户，前端 `useAiStore` 在发送每一条用户消息前，都会动态构建一个隐式的 `System Context`。这个 Context 包含了即时从 Pinia Store 中获取的以下数据：
+- **专注数据**：`todayFocusSeconds`（今日专注秒数）、`currentMode`（当前所处模式）。
+- **任务数据**：通过 `taskStore` 获取的 `pendingTasks`（待办任务列表），重点提取高优先级（Priority=HIGH）且即将到期的任务。
+
+构建过程如下：
+
+```javascript
+// stores/ai.js (上下文构建逻辑)
+const generateSystemContext = async () => {
+  // 获取高优先级任务摘要
+  const activeTasks = tasks.filter(t => t.status !== 'DONE').slice(0, 5)
+  const taskContext = activeTasks.map(t => `- [${t.priority}] ${t.title}`).join('\n')
+  
+  // 组装 System Prompt
+  return `
+    System: You are ACIR, an intelligent productivity assistant.
+    User Context:
+    - Focus Time Today: ${Math.floor(focusTime / 60)} minutes
+    - Current Mode: ${currentMode}
+    - Top Pending Tasks:
+    ${taskContext}
+    
+    Guidelines:
+    - Be concise and encouraging.
+    - If focus time is low, encourage starting a small task.
+    - If focus time > 120 mins, suggest a break.
+  `
+}
+```
+
+这个 Prompt 会被拼接在用户输入的真实问题之前发送给模型。因此，即使用户只问了一句“我该做什么？”，AI 也能回答：“你今天还没有开始专注，建议先处理高优先级的‘毕业论文编纂’任务。”
+
+5.3.2 流式响应与渲染
+为了解决大模型生成文本带来的延迟感，前端采用了流式响应（Streaming）技术。通过 `@google/genai` SDK，系统建立了一个长连接。当模型生成新的 Token 时，前端即时将其追加到 `messages` 数组的最后一条记录中，结合 Vue 的响应式系统，实现了类似打字机的逐字显示效果。此外，利用 `markdown-it` 库对流式内容进行实时渲染，确保了代码块、列表等格式在生成过程中也能正确显示。
+
+5.4 界面适配与交互体验模块实现
+
+作为一款面向个人用户的产品，极致的用户体验是系统的核心竞争力。本节将详细阐述深色模式、移动端适配及沉浸式交互的具体实现。
+
+5.4.1 全局深色模式（Dark Mode）
+为了适应用户在夜间或暗光环境下的使用需求，系统实现了全局深色模式。该功能基于 CSS 变量（CSS Variables）与 Element Plus 的暗黑主题构建。
+前端通过 `theme.js` Store 管理 `isDark` 状态，并监听其变化来动态切换 HTML 根元素的类名：
+
+```javascript
+// stores/theme.js
+const applyTheme = () => {
+  if (isDark.value) {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+}
+```
+
+在样式层面，系统定义了一套语义化的 CSS 变量（如 `--bg-color`, `--text-primary`），并在 `.dark` 选择器下重写这些变量的值。例如，背景色在浅色模式下为 `#ffffff`，在深色模式下自动变为 `#121212`。这种实现方式确保了所有组件能够自动响应主题切换，无需编写额外的 JavaScript 逻辑。
+
+5.4.2 移动端响应式适配
+为了实现“随时随地”的效率管理，系统对移动端进行了深度适配。
+（1）**导航栏重构**：利用 CSS Media Queries (`@media (max-width: 768px)`)，在移动端自动隐藏顶部的双 Header 导航，转而显示底部的 `MobileNavBar` 组件。该组件采用了固定定位（Fixed Positioning）与毛玻璃效果，并针对 iPhone X 等全面屏设备适配了 `safe-area-inset-bottom`，确保手势条不遮挡操作区域。
+（2）**流式布局降级**：首页的 Bento Grid 在桌面端采用 CSS Grid 的多列布局，而在移动端自动降级为 `display: flex; flex-direction: column` 的单列流式布局，确保内容在窄屏设备上依然清晰易读且不产生横向滚动。
+
+5.4.3 动态背景色自适应
+为了增强沉浸感，系统支持用户上传自定义背景图。为了防止背景图颜色过深或过浅导致前景文字不可读，系统引入了 `fast-average-color` 算法。在图片加载完成后，算法会自动提取图片的平均色值（Average Color），并根据其亮度（Brightness）动态调整 UI 的明暗模式。例如，当背景图为深色星空时，系统会自动将前景文字调整为白色，并增加文字阴影以提升对比度。
+
+5.5 系统安全与工程化实践
+
+虽然本系统定位于个人工具，但在安全性与工程化方面依然遵循了企业级开发标准。
+
+5.5.1 用户认证与鉴权
+系统采用了基于 JWT（JSON Web Token）的无状态认证机制。
+1. **登录流程**：用户提交账号密码后，后端 `UserService` 验证凭据。若验证通过，系统使用 HMAC SHA256 算法生成包含用户 ID 与过期时间的 JWT 字符串返回给前端。
+2. **请求拦截**：前端 Axios 拦截器会自动将 JWT 添加到后续所有请求的 `Authorization` 头部。后端配置了拦截器（Interceptor）对每个请求进行 Token 校验，确保只有合法用户才能访问受保护的资源接口。
+3. **密码安全**：为了防止数据库泄露导致的用户密码明文暴露，系统在注册环节引入了 BCrypt 强哈希算法对密码进行加密存储。BCrypt 的加盐（Salt）机制能有效抵御彩虹表攻击。
+
+5.5.2 敏感数据保护
+针对系统中集成的 Google Gemini API Key，系统采取了严格的保护措施。用户的 API Key 不会以明文形式存储在前端代码或 LocalStorage 中，而是由用户在个人设置页输入后，通过 HTTPS 通道发送至后端。后端在入库前对其进行 AES 对称加密，仅在实际调用 Google API 时在内存中临时解密。这种设计彻底杜绝了 API Key 在前端被恶意抓取的风险，保障了用户的资产安全。
+
+5.6 本章小结
+本章详细剖析了 ACIR 系统从业务逻辑到用户体验的完整实现过程。通过 Pinia 状态机与 Sortablejs 算法，实现了流畅的番茄钟与看板交互；利用 MySQL 聚合查询与 ECharts，构建了多维数据可视化的底层支撑；借助 Context Injection 技术，赋予了 AI 助手真正的场景感知能力。同时，深色模式、移动端适配以及 JWT 安全机制的引入，进一步提升了系统的可用性与鲁棒性。这些技术实现共同支撑起了一个既美观又强大的个人效率中心，完美达成了设计初衷。
