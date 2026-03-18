@@ -11,10 +11,14 @@
             "id": "6e38f3b6a0c5bd45",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "appendix/ThesisOutline.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "ThesisOutline"
             }
           }
         ]
@@ -152,12 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "appendix/ThesisOutline.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline"
+              "title": "Outline of ThesisOutline"
             }
           }
         ],
@@ -180,15 +185,17 @@
   },
   "active": "6e38f3b6a0c5bd45",
   "lastOpenFiles": [
+    "appendix/ThesisGuidence.md",
+    "appendix/References_Memo.md",
+    "appendix/proposal.md",
+    "appendix/plans.md",
     "appendix/ACIRIntelligent.md",
     "front-end/src/views/ai/AiAssistantView.vue",
     "front-end/src/stores/ai.js",
-    "appendix/plans.md",
     "front-end/node_modules/@google",
     "front-end/src/views/ai",
     "appendix/optimized.md",
     "appendix/milestone.md",
-    "appendix/proposal.md",
     "appendix/Design.md",
     "optimized.md",
     "milestone.md",
