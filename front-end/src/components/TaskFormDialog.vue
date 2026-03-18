@@ -68,24 +68,31 @@
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
-import { createTag } from '@/api/tag'
+import { getTags, createTag } from '@/api/tag'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps({
   visible: Boolean,
   isEdit: Boolean,
-  initialData: Object,
-  availableTags: {
-    type: Array,
-    default: () => []
-  }
+  initialData: Object
 })
 
 const emit = defineEmits(['update:visible', 'submit', 'tag-created'])
 
 const userStore = useUserStore()
 const selectedTagIds = ref([])
+const availableTags = ref([])
+
+const fetchTags = async () => {
+  if (!userStore.user?.id) return
+  try {
+    const data = await getTags(userStore.user.id)
+    availableTags.value = data || []
+  } catch (error) {
+    console.error('Failed to fetch tags', error)
+  }
+}
 
 const form = reactive({
   title: '',
@@ -97,6 +104,7 @@ const form = reactive({
 
 watch(() => props.visible, (val) => {
   if (val) {
+    fetchTags()
     if (props.isEdit && props.initialData) {
       Object.assign(form, props.initialData)
       selectedTagIds.value = props.initialData.tags ? props.initialData.tags.map(t => t.id) : []

@@ -325,7 +325,7 @@ import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import draggable from 'vuedraggable'
 import Sortable from 'sortablejs'
-import { SortUp, SortDown, Delete, Warning, WarningFilled, RefreshLeft, Search } from '@element-plus/icons-vue'
+import { Warning, WarningFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const activeName = ref('list')
@@ -349,6 +349,7 @@ onUnmounted(() => {
 })
 
 const dialogTitle = ref('Create Task')
+const dialogVisible = ref(false)
 const isEditMode = ref(false)
 const currentTaskId = ref(null)
 
