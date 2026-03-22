@@ -17,6 +17,7 @@ public class AuthController {
     public Result<User> login(@RequestBody User user) {
         User loggedInUser = userService.login(user.getUsername(), user.getPassword());
         if (loggedInUser != null) {
+            loggedInUser.setPassword(null); // Never return password
             return Result.success(loggedInUser);
         } else {
             return Result.error("Invalid username or password");

@@ -4,6 +4,8 @@ import { GoogleGenAI } from "@google/genai"
 import { useUserStore } from './user'
 import { usePomodoroStore } from './pomodoro'
 import { getTasks } from '@/api/task'
+import { getDailyFocusStats } from '@/api/stats'
+import { getUserStats } from '@/api/gamification'
 import { getChatSessions, createChatSession, getChatMessages, saveChatMessage, deleteChatSession, updateChatSessionTitle } from '@/api/chat'
 
 export const useAiStore = defineStore('ai', () => {
@@ -75,44 +77,104 @@ export const useAiStore = defineStore('ai', () => {
 
   const generateSystemContext = async () => {
     const userName = userStore.user?.username || 'User'
-    const focusTime = pomodoroStore.todayTotalMinutes || 0
-    const currentMode = pomodoroStore.mode || 'Focus'
+    const localTime = new Date().toLocaleString()
+    
+    // Ensure we fetch the latest pomodoro count before generating context
+    await pomodoroStore.fetchTodayCount()
+    
+    const focusTime = Math.round(pomodoroStore.todayFocusSeconds / 60) || 0
+    const currentMode = pomodoroStore.currentMode || 'Focus'
     
     let taskContext = "No specific tasks found."
+    let gameContext = ""
+    let trendContext = ""
+    
     try {
       if (userStore.user?.id) {
-        const tasks = await getTasks(userStore.user.id)
+        // Parallel requests for enriched context
+        const [tasks, focusStats, userStats] = await Promise.all([
+          getTasks(userStore.user.id),
+          getDailyFocusStats(userStore.user.id),
+          getUserStats(userStore.user.id)
+        ])
+        
+        // 1. Task Panorama
         if (tasks && tasks.length > 0) {
-          const activeTasks = tasks.filter(t => t.status !== 'DONE').slice(0, 5)
-          const doneTasks = tasks.filter(t => t.status === 'DONE').slice(0, 3)
+          const notDone = tasks.filter(t => t.status !== 'DONE')
+          
+          // Urgent Tasks: Nearest due date first
+          const urgentTasks = notDone
+            .filter(t => t.dueDate)
+            .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+            .slice(0, 5)
+            
+          const urgentIds = new Set(urgentTasks.map(t => t.id))
+          
+          // High Priority Tasks: Not in urgent, sorted by priority
+          const pMap = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 }
+          const highPriTasks = notDone
+            .filter(t => !urgentIds.has(t.id))
+            .sort((a, b) => (pMap[b.priority] || 0) - (pMap[a.priority] || 0))
+            .slice(0, 3)
+
+          const doneTasks = tasks
+            .filter(t => t.status === 'DONE')
+            .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
+            .slice(0, 3)
+          
+          const formatTask = (t) => `- [${t.priority}] ${t.title} ${t.dueDate ? `(Due: ${new Date(t.dueDate).toLocaleString()})` : ''} - ${t.status}`
           
           taskContext = `
-Active Tasks (Top 5):
-${activeTasks.map(t => `- [${t.priority}] ${t.title}`).join('\n')}
+[Urgent Tasks (Upcoming Deadlines)]
+${urgentTasks.length > 0 ? urgentTasks.map(formatTask).join('\n') : 'None'}
 
-Recently Completed:
-${doneTasks.map(t => `- ${t.title}`).join('\n')}
+[High Priority Tasks]
+${highPriTasks.length > 0 ? highPriTasks.map(formatTask).join('\n') : 'None'}
+
+[Recently Completed]
+${doneTasks.length > 0 ? doneTasks.map(t => `- ${t.title}`).join('\n') : 'None'}
           `
+        }
+
+        // 2. Gamification & Streak
+        if (userStats) {
+          gameContext = `- Streak: ${userStats.streakDays || 0} days 🔥 (Level ${userStats.level || 1})`
+        }
+
+        // 3. Trends (Yesterday's focus)
+        if (focusStats && focusStats.length > 0) {
+          const yesterday = new Date()
+          yesterday.setDate(yesterday.getDate() - 1)
+          const yesterdayStr = yesterday.toISOString().split('T')[0]
+          
+          const yesterdayStat = focusStats.find(s => s.date === yesterdayStr)
+          const yesterdayMins = yesterdayStat ? Math.round(yesterdayStat.totalSeconds / 60) : 0
+          trendContext = `- Yesterday Focus: ${yesterdayMins} mins`
         }
       }
     } catch (e) {
-      console.error("Failed to fetch tasks for context", e)
+      console.error("Failed to fetch enriched context", e)
     }
 
     return `
 System: You are ACIR, an intelligent productivity assistant.
 User: ${userName}
-Focus Time Today: ${focusTime} minutes
-Current Mode: ${currentMode}
+Current Local Time: ${localTime}
 
-Task Status:
+[Productivity Status]
+- Today Focus: ${focusTime} mins
+${trendContext}
+${gameContext}
+- Current Mode: ${currentMode}
+
 ${taskContext}
 
 Guidelines:
-- Be concise and encouraging.
-- If focus time is high (>120 mins), suggest a break.
-- Use Markdown.
-- Style: Glassmorphism, transparent, intelligent.
+1. Act as a strict but empathetic productivity coach.
+2. If the user asks about deadlines or times, you MUST use the 'Current Local Time' provided above to calculate the exact remaining time.
+3. Praise the user if they maintain a good streak or focus time.
+4. If focus time > 120 mins, strictly advise taking a break.
+5. Keep answers concise, use Markdown.
     `
   }
 

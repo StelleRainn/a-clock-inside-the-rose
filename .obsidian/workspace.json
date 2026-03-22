@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "appendix/ThesisOutline.md",
-                "mode": "source",
-                "source": false
+                "file": "appendix/初稿v3.md",
+                "mode": "preview",
+                "source": true
               },
               "icon": "lucide-file",
-              "title": "ThesisOutline"
+              "title": "初稿v3"
             }
           }
         ]
@@ -44,7 +44,7 @@
                 "autoReveal": false
               },
               "icon": "lucide-folder-closed",
-              "title": "Files"
+              "title": "文件列表"
             }
           },
           {
@@ -78,7 +78,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 249.5
+    "width": 249.5,
+    "collapsed": true
   },
   "right": {
     "id": "235112b969d6d8fc",
@@ -156,13 +157,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "appendix/ThesisOutline.md",
+                "file": "appendix/初稿v3.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of ThesisOutline"
+              "title": "初稿v3 的大纲"
             }
           }
         ],
@@ -174,37 +175,56 @@
   },
   "left-ribbon": {
     "hiddenItems": {
-      "switcher:Open quick switcher": false,
-      "graph:Open graph view": false,
-      "canvas:Create new canvas": false,
-      "daily-notes:Open today's daily note": false,
-      "templates:Insert template": false,
-      "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false
     }
   },
   "active": "6e38f3b6a0c5bd45",
   "lastOpenFiles": [
+    "appendix/Diagrams_Tables_Assets.md",
+    "appendix/OptimizationLog.md",
+    "database/_localhost-2026_03_21_20_40_40-dump.sql",
     "appendix/ThesisGuidence.md",
+    "appendix/ReduceAIGC.md",
     "appendix/References_Memo.md",
+    "appendix/ACIRIntelligent.md",
+    "appendix/初稿v2.md",
+    "appendix/论文初稿 3 版.docx",
+    "appendix/初稿v3.md",
+    "appendix/初高v3.md",
+    "appendix/初稿v1.md",
+    "appendix/Proposal.md",
+    "appendix/MobileAdaptation.md",
+    "appendix/Design.md",
+    "UIRes/example_7.png",
+    "UIRes/example_6.png",
+    "UIRes/example_5_settingsSounds.png",
+    "UIRes/example_4_settingsTimers.png",
+    "UIRes/example_3_settingsGeneral.png",
+    "UIRes/example_2_details.png",
+    "UIRes/example_1.png",
+    "appendix/开题报告.md",
+    "appendix/Plans.md",
+    "appendix/optimized.md",
+    "back-end/target/classes/com/stellerainn/backend/util/EncryptionUtil.class",
+    "back-end/src/main/java/com/stellerainn/backend/util/EncryptionUtil.java",
+    "back-end/target/classes/com/stellerainn/backend/util",
+    "back-end/src/main/java/com/stellerainn/backend/util",
+    "appendix/ThesisOutline.md",
     "appendix/proposal.md",
     "appendix/plans.md",
-    "appendix/ACIRIntelligent.md",
     "front-end/src/views/ai/AiAssistantView.vue",
     "front-end/src/stores/ai.js",
     "front-end/node_modules/@google",
     "front-end/src/views/ai",
-    "appendix/optimized.md",
     "appendix/milestone.md",
-    "appendix/Design.md",
     "optimized.md",
     "milestone.md",
-    "back-end/target/classes/com/stellerainn/backend/service/UserService.class",
-    "back-end/target/classes/com/stellerainn/backend/entity/User.class",
-    "back-end/target/classes/com/stellerainn/backend/mapper/UserMapper.class",
-    "front-end/src/views/settings/ProfileSettings.vue",
-    "front-end/src/api/user.js",
-    "back-end/target/classes/com/stellerainn/backend/controller/UserController.class",
     "proposal.md",
     "plans.md"
   ]

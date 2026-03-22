@@ -25,4 +25,7 @@ public interface UserMapper {
     @Update("UPDATE users SET nickname=#{nickname}, avatar_url=#{avatarUrl}, bio=#{bio}, " +
             "gender=#{gender}, website=#{website}, email=#{email}, gemini_api_key=#{geminiApiKey} WHERE id=#{id}")
     void updateProfile(User user);
+
+    @Update("UPDATE users SET password=#{password} WHERE id=#{id}")
+    void updatePassword(@Param("id") Long id, @Param("password") String password);
 }
