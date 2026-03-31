@@ -78,7 +78,26 @@
     <!-- Focus Time (Bar) -->
     <el-card class="mb-20">
       <template #header>
-        <span>Focus Time (Last 7 Days)</span>
+        <div class="card-header">
+          <span>Focus Time</span>
+          <div class="header-actions">
+            <el-button-group class="mr-3" size="small">
+              <el-button @click="handlePrevFocusTime">
+                <el-icon><ArrowLeft /></el-icon>
+                {{ prevButtonText }}
+              </el-button>
+              <el-button @click="handleNextFocusTime" :disabled="focusTimeOffset === 0">
+                {{ nextButtonText }}
+                <el-icon><ArrowRight /></el-icon>
+              </el-button>
+            </el-button-group>
+            <el-radio-group v-model="focusTimeRange" size="small" @change="onFocusTimeRangeChange">
+              <el-radio-button label="7days">7 Days</el-radio-button>
+              <el-radio-button label="30days">30 Days</el-radio-button>
+              <el-radio-button label="1year">1 Year</el-radio-button>
+            </el-radio-group>
+          </div>
+        </div>
       </template>
       <div ref="focusChartRef" style="height: 300px;"></div>
     </el-card>
@@ -140,7 +159,7 @@ import { getDailyFocusStats, getTaskStatusStats, getTagFocusStats } from '@/api/
 import { getUserAchievements, getUserStats } from '@/api/gamification'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
-import { Medal, Trophy, Calendar, Finished, Share, Timer } from '@element-plus/icons-vue'
+import { Medal, Trophy, Calendar, Finished, Share, Timer, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const themeStore = useThemeStore()
@@ -152,6 +171,22 @@ let focusChart = null
 let taskChart = null
 let heatmapChart = null
 let tagChart = null
+
+const focusTimeRange = ref('7days')
+const focusTimeOffset = ref(0)
+const allDailyData = ref([])
+
+const prevButtonText = computed(() => {
+  if (focusTimeRange.value === '7days') return 'Previous 7 Days'
+  if (focusTimeRange.value === '30days') return 'Previous 30 Days'
+  return 'Previous 1 Year'
+})
+
+const nextButtonText = computed(() => {
+  if (focusTimeRange.value === '7days') return 'Next 7 Days'
+  if (focusTimeRange.value === '30days') return 'Next 30 Days'
+  return 'Next 1 Year'
+})
 
 const achievements = ref([])
 const achievementsLoading = ref(false)
@@ -301,6 +336,104 @@ watch(() => themeStore.isDark, () => {
   updateChartsTheme()
 })
 
+const handlePrevFocusTime = () => {
+  focusTimeOffset.value++
+  updateFocusChart()
+}
+
+const handleNextFocusTime = () => {
+  if (focusTimeOffset.value > 0) {
+    focusTimeOffset.value--
+    updateFocusChart()
+  }
+}
+
+const onFocusTimeRangeChange = () => {
+  focusTimeOffset.value = 0
+  updateFocusChart()
+}
+
+const updateFocusChart = () => {
+  if (!focusChart) return
+  
+  const range = focusTimeRange.value
+  const offset = focusTimeOffset.value
+  let dates = []
+  let durations = []
+  
+  const endDate = new Date()
+  endDate.setHours(0, 0, 0, 0)
+
+  if (range === '7days') {
+     endDate.setDate(endDate.getDate() - (offset * 7))
+  } else if (range === '30days') {
+     endDate.setDate(endDate.getDate() - (offset * 30))
+  } else if (range === '1year') {
+     endDate.setMonth(endDate.getMonth() - (offset * 12))
+  }
+  
+  const dateMap = new Map()
+  if (allDailyData.value && allDailyData.value.length > 0) {
+    allDailyData.value.forEach(item => {
+      dateMap.set(item.date, Math.round(item.totalSeconds / 60))
+    })
+  }
+
+  if (range === '7days' || range === '30days') {
+    const days = range === '7days' ? 7 : 30
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(endDate)
+      d.setDate(endDate.getDate() - i)
+      
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      const dateStr = `${year}-${month}-${day}`
+      
+      // We can format x-axis label nicer (e.g. 'MM-DD')
+      dates.push(`${month}-${day}`)
+      durations.push(dateMap.get(dateStr) || 0)
+    }
+  } else if (range === '1year') {
+    const monthMap = new Map()
+    if (allDailyData.value && allDailyData.value.length > 0) {
+      allDailyData.value.forEach(item => {
+        const monthStr = item.date.substring(0, 7) // 'YYYY-MM'
+        monthMap.set(monthStr, (monthMap.get(monthStr) || 0) + Math.round(item.totalSeconds / 60))
+      })
+    }
+    
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1)
+      // Safely get YYYY-MM based on local time
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const monthStr = `${year}-${month}`
+      
+      const monthLabel = d.toLocaleDateString(undefined, { year: 'numeric', month: 'short' })
+      dates.push(monthLabel)
+      durations.push(monthMap.get(monthStr) || 0)
+    }
+  }
+  
+  focusChart.setOption({
+    xAxis: {
+      type: 'category',
+      data: dates,
+      axisTick: { alignWithLabel: true }
+    },
+    series: [
+      {
+        name: 'Focus Time',
+        type: 'bar',
+        barWidth: '60%',
+        data: durations,
+        itemStyle: { color: '#409eff' }
+      }
+    ]
+  })
+}
+
 const initCharts = async () => {
   if (!userStore.user || !userStore.user.id) return
 
@@ -311,8 +444,7 @@ const initCharts = async () => {
     
     try {
       const dailyData = await getDailyFocusStats(userStore.user.id)
-      const dates = dailyData.map(item => item.date)
-      const durations = dailyData.map(item => Math.round(item.totalSeconds / 60))
+      allDailyData.value = dailyData
       
       focusChart.hideLoading()
       focusChart.setOption({
@@ -320,31 +452,27 @@ const initCharts = async () => {
           trigger: 'axis',
           axisPointer: { type: 'shadow' }
         },
+        legend: {
+          bottom: '0%', // explicitly position legend at the very bottom
+          data: ['Focus Time']
+        },
         grid: {
           left: '3%',
           right: '4%',
-          bottom: '3%',
+          bottom: '15%', // Increased bottom margin to prevent overlap with legend
           containLabel: true
         },
         xAxis: {
           type: 'category',
-          data: dates,
           axisTick: { alignWithLabel: true }
         },
         yAxis: {
           type: 'value',
           name: 'Minutes'
-        },
-        series: [
-          {
-            name: 'Focus Time',
-            type: 'bar',
-            barWidth: '60%',
-            data: durations,
-            itemStyle: { color: '#409eff' }
-          }
-        ]
+        }
       })
+      
+      updateFocusChart()
 
       // 3. Render Heatmap (Using same daily data)
       if (heatmapChartRef.value) {
@@ -385,7 +513,7 @@ const initCharts = async () => {
             orient: 'horizontal',
             left: 'center',
             bottom: '0%',
-            // Initial colors will be set by updateHeatmapOptions
+            // Initial colors will be set by updateChartsTheme
           },
           calendar: {
             top: 30,
@@ -403,7 +531,7 @@ const initCharts = async () => {
         })
         
         // Apply theme styles immediately
-        updateHeatmapOptions()
+        updateChartsTheme()
       }
 
     } catch (e) {
@@ -432,6 +560,7 @@ const initCharts = async () => {
           trigger: 'item'
         },
         legend: {
+          type: 'scroll',
           top: '5%',
           left: 'center',
           textStyle: { color: isDark ? '#ccc' : '#333' }
@@ -441,6 +570,7 @@ const initCharts = async () => {
             name: 'Task Status',
             type: 'pie',
             radius: ['40%', '70%'],
+            center: ['50%', '55%'],
             avoidLabelOverlap: false,
             itemStyle: {
               borderRadius: 10,
@@ -491,6 +621,7 @@ const initCharts = async () => {
           formatter: '{b}: {c} mins ({d}%)'
         },
         legend: {
+          type: 'scroll',
           top: '5%',
           left: 'center',
           textStyle: { color: isDark ? '#ccc' : '#333' }
@@ -499,8 +630,8 @@ const initCharts = async () => {
           {
             name: 'Focus by Tag',
             type: 'pie',
-            radius: [20, 100],
-            center: ['50%', '50%'],
+            radius: [20, 90],
+            center: ['50%', '55%'],
             roseType: 'radius',
             itemStyle: {
               borderRadius: 5
@@ -738,5 +869,21 @@ onUnmounted(() => {
   .share-section .el-button {
     width: 100%;
   }
+  
+  .header-actions {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+  .mr-3 {
+    margin-right: 0;
+  }
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+.mr-3 {
+  margin-right: 12px;
 }
 </style>
