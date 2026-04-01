@@ -60,6 +60,16 @@ html, body {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
 }
 
+.el-dialog__header {
+  padding: 20px 24px 15px !important;
+  margin-right: 0 !important;
+}
+
+.el-dialog__title {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
 .el-dialog__header,
 .el-dialog__body,
 .el-dialog__footer {

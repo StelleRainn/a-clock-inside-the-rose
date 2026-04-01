@@ -316,23 +316,23 @@ const saveChanges = async () => {
 <style scoped>
 .settings-dialog-container {
   display: flex;
-  height: 450px;
+  height: 480px;
   border-top: 1px solid var(--el-border-color-lighter);
   border-bottom: 1px solid var(--el-border-color-lighter);
-  margin: -20px -20px 0 -20px; /* Offset dialog padding */
+  margin: -10px -24px 0 -24px; /* Offset dialog padding */
 }
 
 .sidebar {
-  width: 180px;
+  width: 220px;
   border-right: 1px solid var(--el-border-color-lighter);
   padding: 20px 0;
-  background-color: var(--el-fill-color-light);
+  background-color: transparent;
   display: flex;
   flex-direction: column;
 }
 
 .menu-item {
-  padding: 12px 24px;
+  padding: 16px 24px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -340,22 +340,29 @@ const saveChanges = async () => {
   color: var(--el-text-color-regular);
   transition: all 0.2s;
   font-weight: 500;
+  font-size: 15px;
 }
 
 .menu-item:hover {
-  background-color: var(--el-fill-color);
+  background-color: var(--el-fill-color-light);
 }
 
 .menu-item.active {
-  background-color: var(--el-color-primary-light-9);
+  background-color: transparent;
   color: var(--el-color-primary);
   border-right: 3px solid var(--el-color-primary);
 }
 
 .content {
   flex: 1;
-  padding: 30px;
+  padding: 40px 50px;
   overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .tab-pane h3 {
@@ -438,14 +445,15 @@ const saveChanges = async () => {
 
 .form-row {
   display: flex;
-  gap: 20px;
-  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 30px;
+  margin-bottom: 40px;
 }
 
 .form-col {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .form-group {

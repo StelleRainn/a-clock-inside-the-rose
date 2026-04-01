@@ -113,11 +113,13 @@
       </div>
 
       <!-- Zen Note -->
-      <div class="zen-note">
+      <div class="zen-note" :class="{ 'is-focused': isZenNoteFocused }">
         <input 
           v-model="zenNote" 
           placeholder="Capture a thought..." 
           @keyup.enter="saveZenNote"
+          @focus="isZenNoteFocused = true"
+          @blur="isZenNoteFocused = false"
           class="zen-input"
         />
       </div>
@@ -132,7 +134,8 @@
     <el-dialog 
       v-model="showSettings" 
       title="Settings" 
-      width="600px" 
+      width="800px" 
+      top="10vh"
       append-to-body
       class="settings-modal"
       :show-close="false"
@@ -159,6 +162,7 @@ const fac = new FastAverageColor()
 const isUIHidden = ref(false)
 let hideTimer = null
 const zenNote = ref('')
+const isZenNoteFocused = ref(false)
 const showSettings = ref(false)
 const tasks = ref([])
 const analyzedTheme = ref('light') // 'light' means light text (dark bg), 'dark' means dark text (light bg)
@@ -369,7 +373,7 @@ onUnmounted(() => {
 /* UI Hiding Logic */
 .ui-hidden .mode-toggles,
 .ui-hidden .timer-controls,
-.ui-hidden .zen-note,
+.ui-hidden .zen-note:not(.is-focused),
 .ui-hidden .scroll-indicator,
 .ui-hidden .current-task {
   opacity: 0;
