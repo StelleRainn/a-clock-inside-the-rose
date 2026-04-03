@@ -1,5 +1,5 @@
-# 构建阶段：使用 Maven 官方镜像打包 SpringBoot 项目
-FROM maven:3.9.6-eclipse-temurin-17 AS builder
+# 构建阶段：使用 Maven 官方镜像打包 SpringBoot 项目 (使用 JDK 21)
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
 # 设置工作目录
 WORKDIR /build
@@ -15,8 +15,8 @@ COPY src ./src
 # 执行打包命令，跳过测试
 RUN mvn clean package -DskipTests
 
-# 运行阶段：使用轻量级的 JRE 镜像运行应用
-FROM eclipse-temurin:17-jre-alpine
+# 运行阶段：使用轻量级的 JRE 21 镜像运行应用
+FROM eclipse-temurin:21-jre-alpine
 
 # 设置工作目录
 WORKDIR /app
