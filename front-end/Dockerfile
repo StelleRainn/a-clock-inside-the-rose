@@ -12,8 +12,7 @@ RUN npm install -g pnpm && pnpm install
 
 # 复制项目源代码并执行构建
 COPY . .
-# 限制 Node.js 内存使用（如 1024MB），防止在小内存云服务器上构建时触发 OOM 导致死机或断开连接
-RUN NODE_OPTIONS="--max-old-space-size=1024" pnpm run build
+RUN pnpm build
 
 # 使用 Nginx 官方镜像作为运行环境
 FROM nginx:alpine AS production-stage
