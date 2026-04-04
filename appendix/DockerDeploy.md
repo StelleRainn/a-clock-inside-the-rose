@@ -63,7 +63,7 @@
 
 1. **后端连不上数据库**: 检查 `application.yml` 中的 `spring.datasource.url`，在 docker-compose 内部网络中，主机名应为数据库容器名（如 `jdbc:mysql://mysql-container:3306/db_name`）。
 2. **前端刷新 404**: 确保 Nginx 配置文件中配置了 `try_files $uri $uri/ /index.html;`。
-3. **前端跨域/请求后端失败**: Nginx 需正确配置反向代理 `location /api/ { proxy_pass http://backend-container:8080/; }`。
+3. **前端跨域/请求后端失败**: Nginx 需正确配置反向代理 `location /api/ { proxy_pass http://acir-backend:8080; }` (注意 `proxy_pass` 结尾不能有斜杠 `/`，否则会导致 Nginx 吞掉 `/api/` 路径前缀，进而触发后端 SpringBoot 404 错误)。
 4. **数据库中文乱码**: 确保 `init.sql` 及 MySQL 容器启动参数设置了 `utf8mb4` 字符集。
 
 ## 6. 常见运维问题解答 (FAQ)
