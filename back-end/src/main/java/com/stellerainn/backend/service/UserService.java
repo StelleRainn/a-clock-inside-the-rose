@@ -90,4 +90,9 @@ public class UserService {
             user.setGeminiApiKey(plainKey);
         }
     }
+
+    public void updatePassword(Long id, String rawPassword) {
+        String hashed = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
+        userMapper.updatePassword(id, hashed);
+    }
 }

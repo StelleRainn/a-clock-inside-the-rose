@@ -1,4 +1,67 @@
-# 云主机Terminal错误日志
+# 云主机Terminal日志
+
+#### 4 月 4 日 10：49
+root@iZ0jldq0yd4sa1m00vxvqmZ:/opt/acir-deploy# docker-compose up -d --build
+[+] Building 2.6s (31/31) FINISHED                                                                                     docker:default
+ => [acir-backend internal] load build definition from Dockerfile                                                                0.0s
+ => => transferring dockerfile: 1.01kB                                                                                           0.0s
+ => [acir-backend internal] load metadata for docker.io/library/eclipse-temurin:21-jre-alpine                                    0.4s
+ => [acir-backend internal] load metadata for docker.io/library/maven:3.9.6-eclipse-temurin-21                                   1.1s
+ => [acir-backend internal] load .dockerignore                                                                                   0.0s
+ => => transferring context: 2B                                                                                                  0.0s
+ => [acir-backend builder 1/6] FROM docker.io/library/maven:3.9.6-eclipse-temurin-21@sha256:8d63d4c1902cb12d9e79a70671b18ebe263  0.0s
+ => => resolve docker.io/library/maven:3.9.6-eclipse-temurin-21@sha256:8d63d4c1902cb12d9e79a70671b18ebe26358cb592561af33ca1808f  0.0s
+ => [acir-backend stage-1 1/4] FROM docker.io/library/eclipse-temurin:21-jre-alpine@sha256:6ad8ed080d9be96b61438ec3ce99388e294a  0.0s
+ => => resolve docker.io/library/eclipse-temurin:21-jre-alpine@sha256:6ad8ed080d9be96b61438ec3ce99388e294af216ed57356000c06070e  0.0s
+ => [acir-backend internal] load build context                                                                                   0.0s
+ => => transferring context: 4.60kB                                                                                              0.0s
+ => CACHED [acir-backend stage-1 2/4] WORKDIR /app                                                                               0.0s
+ => CACHED [acir-backend builder 2/6] WORKDIR /build                                                                             0.0s
+ => CACHED [acir-backend builder 3/6] COPY pom.xml .                                                                             0.0s
+ => CACHED [acir-backend builder 4/6] RUN mvn dependency:go-offline -B                                                           0.0s
+ => CACHED [acir-backend builder 5/6] COPY src ./src                                                                             0.0s
+ => CACHED [acir-backend builder 6/6] RUN mvn clean package -DskipTests                                                          0.0s
+ => CACHED [acir-backend stage-1 3/4] COPY --from=builder /build/target/*.jar app.jar                                            0.0s
+ => CACHED [acir-backend stage-1 4/4] RUN apk add --no-cache tzdata     && ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/local  0.0s
+ => [acir-backend] exporting to image                                                                                            0.1s
+ => => exporting layers                                                                                                          0.0s
+ => => exporting manifest sha256:693f7c60893f8833b708a4c65586a567840c98aceb30d46121dfe72ef8f64742                                0.0s
+ => => exporting config sha256:b6ea05994d7da1b5190949133c794c1ee023e9a6c71720edda14c69e7a7c6c1b                                  0.0s
+ => => exporting attestation manifest sha256:1378cd1aa3f6aa507ad39a79336d9a8b481569b89482f0c11cff6f4fc9e8e5f3                    0.0s
+ => => exporting manifest list sha256:16c639c7ff0490bb2e0e6634a8a85d0e261df06a07706e56380a1ba8771dd93a                           0.0s
+ => => naming to docker.io/library/acir-deploy-acir-backend:latest                                                               0.0s
+ => => unpacking to docker.io/library/acir-deploy-acir-backend:latest                                                            0.0s
+ => [acir-frontend internal] load build definition from Dockerfile                                                               0.0s
+ => => transferring dockerfile: 842B                                                                                             0.0s
+ => [acir-frontend internal] load metadata for docker.io/library/nginx:alpine                                                    0.6s
+ => [acir-frontend internal] load metadata for docker.io/library/node:20-alpine                                                  1.0s
+ => [acir-frontend internal] load .dockerignore                                                                                  0.0s
+ => => transferring context: 2B                                                                                                  0.0s
+ => [acir-frontend build-stage 1/6] FROM docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6  0.0s
+ => => resolve docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb8f333c          0.0s
+ => [acir-frontend internal] load build context                                                                                  0.0s
+ => => transferring context: 3.03kB                                                                                              0.0s
+ => [acir-frontend production-stage 1/3] FROM docker.io/library/nginx:alpine@sha256:eb05700fe7baa6890b74278e39b66b2ed1326831f9e  0.0s
+ => => resolve docker.io/library/nginx:alpine@sha256:eb05700fe7baa6890b74278e39b66b2ed1326831f9ec3ed4bdc6361a4ac2f333            0.0s
+ => CACHED [acir-frontend build-stage 2/6] WORKDIR /app                                                                          0.0s
+ => CACHED [acir-frontend build-stage 3/6] COPY package.json pnpm-lock.yaml ./                                                   0.0s
+ => CACHED [acir-frontend build-stage 4/6] RUN npm install -g pnpm && pnpm install                                               0.0s
+ => CACHED [acir-frontend build-stage 5/6] COPY . .                                                                              0.0s
+ => CACHED [acir-frontend build-stage 6/6] RUN pnpm run build                                                                    0.0s
+ => CACHED [acir-frontend production-stage 2/3] COPY --from=build-stage /app/dist /usr/share/nginx/html                          0.0s
+ => CACHED [acir-frontend production-stage 3/3] COPY nginx.conf /etc/nginx/conf.d/default.conf                                   0.0s
+ => [acir-frontend] exporting to image                                                                                           0.1s
+ => => exporting layers                                                                                                          0.0s
+ => => exporting manifest sha256:f50ebbe9a18675b012961a2014e6329eb3563a086d24ca4c20a8e5131b9af58d                                0.0s
+ => => exporting config sha256:0004ec6d86fbff427be825d451a02d3954e783cab107b807840625fe746aa860                                  0.0s
+ => => exporting attestation manifest sha256:0d242bfc9cd2795519756144c6cc19d0474ccc6bac131273fa4af1465f478405                    0.0s
+ => => exporting manifest list sha256:16e2fbf1e79d1b2d95e3c551b1e3fcd78d49562979ca00323e3b0d56727edf7a                           0.0s
+ => => naming to docker.io/library/acir-deploy-acir-frontend:latest                                                              0.0s
+ => => unpacking to docker.io/library/acir-deploy-acir-frontend:latest                                                           0.0s
+[+] Running 3/3
+ ✔ Container acir-mysql     Running                                                                                              0.0s 
+ ✔ Container acir-backend   Started                                                                                              1.1s 
+ ✔ Container acir-frontend  Started 
 
 #### 4 月 3 日 23:42
 root@iZ0jldq0yd4sa1m00vxvqmZ:/opt/acir-deploy# docker-compose up -d --build

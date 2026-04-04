@@ -40,6 +40,18 @@
           <el-input v-model="form.website" placeholder="https://your-site.com" />
         </el-form-item>
 
+        <el-divider content-position="left">Security</el-divider>
+
+        <el-form-item label="New Password">
+          <el-input 
+            v-model="form.password" 
+            type="password" 
+            show-password 
+            placeholder="Enter new password to change" 
+          />
+          <div class="hint">Leave blank if you don't want to change it.</div>
+        </el-form-item>
+
         <el-divider content-position="left">AI Configuration</el-divider>
 
         <el-form-item label="Gemini API Key">
@@ -100,6 +112,7 @@ const form = reactive({
   bio: '',
   gender: '',
   website: '',
+  password: '',
   geminiApiKey: ''
 })
 
@@ -127,6 +140,7 @@ const saveProfile = async () => {
     if (updatedUser) {
       userStore.setUser(updatedUser)
       ElMessage.success('Profile updated successfully')
+      form.password = '' // Clear password field after save
     } else {
       console.warn('Updated user is empty')
       // Even if empty, maybe success?

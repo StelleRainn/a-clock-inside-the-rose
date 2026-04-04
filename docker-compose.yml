@@ -18,7 +18,7 @@ services:
       # 将数据库数据持久化到宿主机目录
       - ./mysql-data:/var/lib/mysql
       # 挂载初始化脚本，第一次启动容器时会自动执行
-      - ./database/_localhost-2026_04_02_23_15_46-dump.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/_localhost-2026_04_04_11_36_56-dump.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - acir-network
 

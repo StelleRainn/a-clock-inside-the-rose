@@ -42,6 +42,11 @@ public class UserController {
             existingUser.setGeminiApiKey(user.getGeminiApiKey());
         }
         
+        // Update password if provided
+        if (user.getPassword() != null && !user.getPassword().trim().isEmpty()) {
+            userService.updatePassword(id, user.getPassword());
+        }
+        
         userService.updateProfile(existingUser);
         existingUser.setPassword(null);
         return Result.success(existingUser);
