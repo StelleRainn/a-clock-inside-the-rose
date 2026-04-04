@@ -5,6 +5,7 @@
 ## 待办与灵感 
 
 ### 细节体验优化 (UX Polish)
+- [x] **个人主页与下拉组件毛玻璃视觉升级 (Profile & Dropdown Glassmorphism UI Polish)**: 对 `/profile` 个人资料页进行了深度体验优化，重构为“默认展示、点击编辑”的双态模式。默认状态下头像居中放大，并对敏感信息（密码、API 密钥）进行了智能脱敏与占位显示，增强了信息展示的层次感与安全性。同时，针对全局的下拉菜单（如 `/dashboard` 任务选择下拉框）统一引入了毛玻璃（Glassmorphism）与大圆角（16px）设计语言。通过将背景色调整为带 Alpha 通道的半透明色（`rgba`），并结合 `backdrop-filter: blur(20px)`，完美实现了通透的高级模糊质感，且全面兼容了深色模式（Dark Mode），使得全局 UI 风格更加统一沉浸。
 - [ ] **Transition**: 路由切换动画。
 - [ ] **Micro-interactions**: 按钮反馈、计时结束特效。
 - [ ] **Sound**: 更多白噪音选择，音量渐入渐出。
@@ -32,6 +33,9 @@
 ## 历史优化归档 
 
 ### 定稿至终稿期
+- [x] **全局国际化与个人资料页汉化 (Global I18n & Profile Localization)**: 全面引入 Vue-i18n 进行多语言架构重构，将全站所有硬编码文本替换为可切换的中/英文变量。特别补全了 `/profile` 个人资料页面的多语言词条，涵盖用户信息、安全设置、AI配置及数据导出等模块，并在业务逻辑中全面支持了相关提示弹窗的国际化。
+- [x] **全局排版与字体间距优化 (Global Typography Polish)**: 调整了全局 CSS 样式，将字间距 (`letter-spacing`) 统一增加至 `2px`，并适当缩小了字号，显著提升了界面的呼吸感与文字可读性。
+- [x] **统计页图表排版重构 (Stats Charts Layout Optimization)**: 针对 `/stats` 页面增加字间距后导致的横向空间局促问题，深度优化了“标签专注分布”（玫瑰图）与“任务状态分布”（占比图）的排版。将原本的横向图例改为纵向排列 (`orient: 'vertical'`) 并靠左垂直居中，同时将图表主体整体向右偏移 (`center: ['65%', '50%']`)，实现了优雅的左右分栏视觉效果，完美适配了新的字体排版。
 - [x] **番茄钟选中任务持久化与状态修复 (Timer Task Persistence)**: 修复了在首页 (`/dashboard`) 或番茄钟页面 (`/pomodoro`) 选中专注任务后，页面刷新会导致选中状态丢失、进而导致专注记录的任务 ID 存为 null 的问题。在 `pomodoro.js` Store 中引入了 `localStorage` 持久化 `selectedTaskId` 并在初始化时自动恢复；同时深度重构了 `PomodoroTimer.vue` 的响应式逻辑，将原先断层的 `ref` 替换为带有 `get/set` 的 `computed` 属性，并补全了缺失的 `updateDuration` 等方法。随后进一步修复了云端环境下任务 ID 类型不一致（浏览器恢复后为数字、任务列表返回为字符串）导致的匹配失败问题，统一改为以字符串形式持久化与比对，并在提交后端时再安全转换，从而保证本地与生产环境下都能稳定恢复选中任务。
 - [x] **修复 Nginx 代理导致后端 404 的问题 (Nginx Reverse Proxy 404 Fix)**: 修复了公网部署时前端请求 `/api/auth/register` 等接口报 404 Not Found 的问题。原因在于 Nginx 的 `nginx.conf` 中 `proxy_pass http://acir-backend:8080/;` 带有尾部斜杠，导致 Nginx 在转发时截断了 `/api/` 前缀，使请求变成了 `/auth/register`，从而无法匹配后端 SpringBoot 控制器的 `@RequestMapping("/api/...")` 路由。通过移除 `proxy_pass` 尾部的斜杠解决了此问题。
 - [x] **增加修改密码功能 (Change Password)**: 在用户信息页面 (`/profile`) 增加了修改密码的功能，用户可直接输入新密码进行修改。后端复用了原有的强哈希 (BCrypt) 加密逻辑，保障账户安全。

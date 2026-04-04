@@ -6,28 +6,28 @@
         :class="{ active: activeTab === 'general' }"
         @click="activeTab = 'general'"
       >
-        <el-icon><Monitor /></el-icon> General
+        <el-icon><Monitor /></el-icon> {{ $t('settings.general') }}
       </div>
       <div 
         class="menu-item" 
         :class="{ active: activeTab === 'timers' }"
         @click="activeTab = 'timers'"
       >
-        <el-icon><Timer /></el-icon> Timers
+        <el-icon><Timer /></el-icon> {{ $t('settings.timers') }}
       </div>
       <div 
         class="menu-item" 
         :class="{ active: activeTab === 'sounds' }"
         @click="activeTab = 'sounds'"
       >
-        <el-icon><Headset /></el-icon> Sounds
+        <el-icon><Headset /></el-icon> {{ $t('settings.sounds') }}
       </div>
     </div>
     
     <div class="content">
       <!-- General: Background Image -->
       <div v-if="activeTab === 'general'" class="tab-pane">
-        <h3>Background</h3>
+        <h3>{{ $t('settings.background') }}</h3>
         <input 
           type="file" 
           ref="fileInput" 
@@ -42,7 +42,7 @@
             @click="tempBg = ''"
           >
             <div class="bg-preview default-bg"></div>
-            <span>Default</span>
+            <span>Minimal Black</span>
           </div>
           
           <div 
@@ -64,7 +64,7 @@
                 <el-icon><Delete /></el-icon>
               </div>
             </div>
-            <span>Custom</span>
+            <span>{{ $t('settings.customImage') }}</span>
           </div>
 
           <div 
@@ -83,19 +83,19 @@
         </div>
 
         <div v-if="tempBg" class="mt-4">
-          <h3>Appearance</h3>
+          <h3>{{ $t('settings.theme') }}</h3>
           <div class="form-col">
             <div class="form-group full-width">
               <label>Hero Text Theme</label>
               <el-radio-group v-model="heroTheme" size="small">
-                <el-radio-button label="auto">Auto</el-radio-button>
-                <el-radio-button label="light">Light Text</el-radio-button>
-                <el-radio-button label="dark">Dark Text</el-radio-button>
+                <el-radio-button label="auto">{{ $t('settings.auto') }}</el-radio-button>
+                <el-radio-button label="light">{{ $t('settings.light') }}</el-radio-button>
+                <el-radio-button label="dark">{{ $t('settings.dark') }}</el-radio-button>
               </el-radio-group>
             </div>
             <div class="form-group full-width">
               <div class="flex-between">
-                <label>Background Overlay Opacity</label>
+                <label>{{ $t('settings.overlayOpacity') }}</label>
                 <span>{{ Math.round(bgOverlayOpacity * 100) }}%</span>
               </div>
               <el-slider v-model="bgOverlayOpacity" :min="0" :max="1" :step="0.05" />
@@ -106,34 +106,34 @@
 
       <!-- Timers: Duration & Auto-start -->
       <div v-if="activeTab === 'timers'" class="tab-pane">
-        <h3>Timer Durations (minutes)</h3>
+        <h3>{{ $t('settings.durations') }}</h3>
         <div class="form-row">
           <div class="form-group">
-            <label>Pomodoro</label>
+            <label>{{ $t('settings.pomodoro') }}</label>
             <el-input-number v-model="workMins" :min="1" :max="60" />
           </div>
           <div class="form-group">
-            <label>Short Break</label>
+            <label>{{ $t('settings.shortBreak') }}</label>
             <el-input-number v-model="shortBreakMins" :min="1" :max="30" />
           </div>
           <div class="form-group">
-            <label>Long Break</label>
+            <label>{{ $t('settings.longBreak') }}</label>
             <el-input-number v-model="longBreakMins" :min="1" :max="60" />
           </div>
         </div>
         
-        <h3>Sequence</h3>
+        <h3>{{ $t('settings.autoStart') }}</h3>
         <div class="form-col">
           <div class="switch-row">
-            <span>Auto-start Breaks</span>
+            <span>{{ $t('settings.autoStartBreaks') }}</span>
             <el-switch v-model="autoStartBreaks" />
           </div>
           <div class="switch-row">
-            <span>Auto-start Pomodoros</span>
+            <span>{{ $t('settings.autoStartPomodoros') }}</span>
             <el-switch v-model="autoStartPomodoros" />
           </div>
           <div class="form-group mt-2">
-            <label>Long Break interval</label>
+            <label>{{ $t('settings.longBreakInterval') }}</label>
             <el-input-number v-model="longBreakInterval" :min="1" :max="10" />
           </div>
         </div>
@@ -141,27 +141,27 @@
 
       <!-- Sounds: Volume & Selection -->
       <div v-if="activeTab === 'sounds'" class="tab-pane">
-        <h3>Sound Settings</h3>
+        <h3>{{ $t('settings.sound') }}</h3>
         <div class="form-col">
            <div class="form-group full-width">
-            <label>Alert Sound</label>
+            <label>{{ $t('settings.alertSound') }}</label>
             <el-select v-model="selectedSound">
-              <el-option label="Bell" value="bell" />
-              <el-option label="Alarm" value="alarm" />
-              <el-option label="Digital" value="digital" />
+              <el-option :label="$t('settings.bell')" value="bell" />
+              <el-option :label="$t('settings.digital')" value="digital" />
+              <el-option :label="$t('settings.chime')" value="chime" />
             </el-select>
           </div>
           
           <div class="form-group full-width mt-2">
             <div class="flex-between">
-              <label>Volume</label>
+              <label>{{ $t('settings.volume') }}</label>
               <span>{{ soundVolume }}%</span>
             </div>
             <el-slider v-model="soundVolume" />
           </div>
           
           <div class="switch-row mt-2">
-            <span>Play sound when timer finishes</span>
+            <span>{{ $t('settings.enableSound') }}</span>
             <el-switch v-model="soundEnabled" />
           </div>
         </div>

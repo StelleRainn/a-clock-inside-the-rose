@@ -2,9 +2,9 @@
   <el-card class="widget-card glass-card">
     <template #header>
       <div class="card-header">
-        <span>Activity Heatmap</span>
+        <span>{{ $t('widgets.activityHeatmap') }}</span>
         <span class="streak-badge" v-if="streakDays > 0">
-          <el-icon color="#f56c6c"><Opportunity /></el-icon> {{ streakDays }} Day Streak
+          <el-icon color="#f56c6c"><Opportunity /></el-icon> {{ streakDays }} {{ $t('widgets.dayStreak') }}
         </span>
       </div>
     </template>
@@ -55,7 +55,7 @@
             </div>
 
             <div v-if="getFocusTimeForDate(data.day) === 0 && getTasksForDate(data.day).length === 0" class="empty-state">
-              <span class="empty-text">No focus records yet</span>
+              <span class="empty-text">{{ $t('widgets.noActivity') }}</span>
             </div>
           </div>
         </el-popover>

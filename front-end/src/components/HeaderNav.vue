@@ -16,24 +16,30 @@
       <div class="nav-center">
         <nav class="main-menu">
           <router-link to="/dashboard" class="nav-item" active-class="active">
-            <el-icon><Odometer /></el-icon> Focus Station
+            <el-icon><Odometer /></el-icon> {{ $t('nav.focusStation') }}
           </router-link>
           <router-link to="/calendar" class="nav-item" active-class="active">
-            <el-icon><Calendar /></el-icon> Calendar
+            <el-icon><Calendar /></el-icon> {{ $t('nav.calendar') }}
           </router-link>
           <router-link to="/tasks" class="nav-item" active-class="active">
-            <el-icon><List /></el-icon> Tasks
+            <el-icon><List /></el-icon> {{ $t('nav.tasks') }}
           </router-link>
           <router-link to="/stats" class="nav-item" active-class="active">
-            <el-icon><TrendCharts /></el-icon> Stats
-          </router-link>
-          <router-link to="/intelligent" class="nav-item" active-class="active">
-            <el-icon><Cpu /></el-icon> Intelligent
+            <el-icon><TrendCharts /></el-icon> {{ $t('nav.stats') }}
           </router-link>
         </nav>
       </div>
 
       <div class="nav-right">
+        <!-- Language Toggle -->
+        <el-button
+          circle
+          plain
+          @click="toggleLanguage"
+          class="hero-btn lang-toggle"
+        >
+          {{ currentLang === 'en' ? '中' : 'EN' }}
+        </el-button>
         <el-switch
           v-model="themeStore.isDark"
           inline-prompt
@@ -52,8 +58,8 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="profile">Profile</el-dropdown-item>
-              <el-dropdown-item divided command="logout">Logout</el-dropdown-item>
+              <el-dropdown-item command="profile">{{ $t('nav.profile') }}</el-dropdown-item>
+              <el-dropdown-item divided command="logout">{{ $t('nav.logout') }}</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -75,24 +81,30 @@
       <div class="nav-center">
         <nav class="main-menu">
           <router-link to="/dashboard" class="nav-item" active-class="active">
-            <el-icon><Odometer /></el-icon> Focus Station
+            <el-icon><Odometer /></el-icon> {{ $t('nav.focusStation') }}
           </router-link>
           <router-link to="/calendar" class="nav-item" active-class="active">
-            <el-icon><Calendar /></el-icon> Calendar
+            <el-icon><Calendar /></el-icon> {{ $t('nav.calendar') }}
           </router-link>
           <router-link to="/tasks" class="nav-item" active-class="active">
-            <el-icon><List /></el-icon> Tasks
+            <el-icon><List /></el-icon> {{ $t('nav.tasks') }}
           </router-link>
           <router-link to="/stats" class="nav-item" active-class="active">
-            <el-icon><TrendCharts /></el-icon> Stats
-          </router-link>
-          <router-link to="/intelligent" class="nav-item" active-class="active">
-            <el-icon><Cpu /></el-icon> Intelligent
+            <el-icon><TrendCharts /></el-icon> {{ $t('nav.stats') }}
           </router-link>
         </nav>
       </div>
 
       <div class="nav-right">
+        <!-- Language Toggle -->
+        <el-button
+          circle
+          plain
+          @click="toggleLanguage"
+          class="lang-toggle"
+        >
+          {{ currentLang === 'en' ? '中' : 'EN' }}
+        </el-button>
         <el-switch
           v-model="themeStore.isDark"
           inline-prompt
@@ -111,8 +123,8 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="profile">Profile</el-dropdown-item>
-              <el-dropdown-item divided command="logout">Logout</el-dropdown-item>
+              <el-dropdown-item command="profile">{{ $t('nav.profile') }}</el-dropdown-item>
+              <el-dropdown-item divided command="logout">{{ $t('nav.logout') }}</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -124,10 +136,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
 import { usePomodoroStore } from '@/stores/pomodoro'
-import { Moon, Sunny, Timer, Odometer, List, TrendCharts, Plus, Calendar, Cpu } from '@element-plus/icons-vue'
+import { Moon, Sunny, Timer, Odometer, List, TrendCharts, Plus, Calendar } from '@element-plus/icons-vue'
 import { getUserProfile } from '@/api/user'
 import { FastAverageColor } from 'fast-average-color'
 
@@ -139,6 +152,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const { t, locale } = useI18n()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
 const pomodoroStore = usePomodoroStore()
@@ -148,6 +162,14 @@ const isScrolled = ref(false)
 const username = computed(() => userStore.user?.username || 'User')
 const avatarUrl = ref('')
 const analyzedTheme = ref('light')
+
+// Language Toggle Logic
+const currentLang = computed(() => locale.value)
+const toggleLanguage = () => {
+  const newLang = locale.value === 'en' ? 'zh' : 'en'
+  locale.value = newLang
+  localStorage.setItem('language', newLang)
+}
 
 // Hero Theme Logic
 const currentHeroTheme = computed(() => {

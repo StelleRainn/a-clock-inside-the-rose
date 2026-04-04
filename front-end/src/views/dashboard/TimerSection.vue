@@ -24,7 +24,7 @@
           :disabled="pomodoroStore.isRunning"
           @click="pomodoroStore.setMode('pomodoro')"
         >
-          pomodoro
+          {{ $t('timer.pomodoro') }}
         </button>
         <button 
           class="mode-btn" 
@@ -32,7 +32,7 @@
           :disabled="pomodoroStore.isRunning"
           @click="pomodoroStore.setMode('short-break')"
         >
-          short break
+          {{ $t('timer.shortBreak') }}
         </button>
         <button 
           class="mode-btn" 
@@ -40,7 +40,7 @@
           :disabled="pomodoroStore.isRunning"
           @click="pomodoroStore.setMode('long-break')"
         >
-          long break
+          {{ $t('timer.longBreak') }}
         </button>
       </div>
 
@@ -55,10 +55,11 @@
           trigger="click" 
           :disabled="pomodoroStore.isRunning"
           @command="handleTaskSelect"
+          popper-class="glass-dropdown"
         >
           <div class="task-chip" :class="{ disabled: pomodoroStore.isRunning }">
             <span class="task-icon">⚡</span>
-            <span class="task-text">{{ currentTaskTitle || 'Select a task to focus' }}</span>
+            <span class="task-text">{{ currentTaskTitle || $t('timer.selectTask') }}</span>
             <el-icon v-if="!pomodoroStore.isRunning" class="dropdown-icon"><ArrowDown /></el-icon>
           </div>
           <template #dropdown>
@@ -70,7 +71,7 @@
               >
                 {{ task.title }}
               </el-dropdown-item>
-              <el-dropdown-item divided command="clear">Clear Selection</el-dropdown-item>
+              <el-dropdown-item divided command="clear">{{ $t('timer.clearSelection') }}</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -83,7 +84,7 @@
           :class="{ active: pomodoroStore.isRunning }"
           @click="pomodoroStore.toggleTimer()"
         >
-          {{ pomodoroStore.isRunning ? 'PAUSE' : 'START' }}
+          {{ pomodoroStore.isRunning ? $t('timer.pause') : $t('timer.start') }}
         </el-button>
         
         <el-button 
@@ -116,7 +117,7 @@
       <div class="zen-note" :class="{ 'is-focused': isZenNoteFocused }">
         <input 
           v-model="zenNote" 
-          placeholder="Capture a thought..." 
+          :placeholder="$t('timer.captureThought')" 
           @keyup.enter="saveZenNote"
           @focus="isZenNoteFocused = true"
           @blur="isZenNoteFocused = false"
@@ -133,7 +134,7 @@
     <!-- Settings Dialog -->
     <el-dialog 
       v-model="showSettings" 
-      title="Settings" 
+      :title="$t('settings.title')" 
       width="800px" 
       top="10vh"
       append-to-body
@@ -147,6 +148,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { usePomodoroStore } from '@/stores/pomodoro'
 import { useUserStore } from '@/stores/user'
 import { createTask, getTasks } from '@/api/task'
@@ -155,6 +157,7 @@ import { ElMessage } from 'element-plus'
 import SettingsDialog from '@/components/SettingsDialog.vue'
 import { FastAverageColor } from 'fast-average-color'
 
+const { t } = useI18n()
 const pomodoroStore = usePomodoroStore()
 const userStore = useUserStore()
 const fac = new FastAverageColor()
@@ -279,10 +282,10 @@ const saveZenNote = async () => {
       status: 'TODO',
       priority: 'LOW'
     })
-    ElMessage.success('Note captured')
+    ElMessage.success(t('timer.noteCaptured'))
     zenNote.value = ''
   } catch {
-    ElMessage.error('Failed to save note')
+    ElMessage.error(t('timer.noteFailed'))
   }
 }
 
@@ -324,6 +327,61 @@ onUnmounted(() => {
   clearTimeout(hideTimer)
 })
 </script>
+
+<style>
+/* Global Glass Dropdown Style for el-dropdown appended to body */
+.glass-dropdown {
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid var(--el-border-color-lighter) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+  padding: 8px 0 !important;
+}
+
+html.dark .glass-dropdown {
+  background: rgba(30, 30, 30, 0.7) !important;
+}
+
+.glass-dropdown .el-dropdown-menu {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.glass-dropdown .el-dropdown-menu__item {
+  padding: 10px 20px !important;
+  font-size: 14px !important;
+  transition: all 0.2s ease !important;
+  color: var(--el-text-color-primary) !important;
+  background: transparent !important;
+}
+
+.glass-dropdown .el-dropdown-menu__item:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: var(--el-color-primary) !important;
+}
+
+html.dark .glass-dropdown .el-dropdown-menu__item:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.glass-dropdown .el-dropdown-menu__item--divided {
+  margin-top: 6px !important;
+  border-top: 1px solid var(--el-border-color-lighter) !important;
+}
+
+.glass-dropdown .el-popper__arrow::before {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid var(--el-border-color-lighter) !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+html.dark .glass-dropdown .el-popper__arrow::before {
+  background: rgba(30, 30, 30, 0.7) !important;
+}
+</style>
 
 <style scoped>
 .timer-section {

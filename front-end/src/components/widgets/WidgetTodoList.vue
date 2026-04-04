@@ -2,8 +2,8 @@
   <el-card class="widget-card glass-card">
     <template #header>
       <div class="card-header">
-        <span>Upcoming Tasks</span>
-        <el-button link @click="$router.push('/tasks')">View All</el-button>
+        <span>{{ $t('widgets.todoList') }}</span>
+        <el-button link @click="$router.push('/tasks')">{{ $t('widgets.viewAll') }}</el-button>
       </div>
     </template>
     <div class="task-list">
@@ -13,7 +13,7 @@
         <el-tag size="small" :type="getPriorityType(task.priority)">{{ task.priority }}</el-tag>
       </div>
       <div v-if="recentTasks.length === 0" class="empty-state">
-        No pending tasks. <el-button link type="primary" @click="$emit('add-task')">Add one?</el-button>
+        {{ $t('widgets.noPendingTasks') }} <el-button link type="primary" @click="$emit('add-task')">{{ $t('widgets.addOne') }}</el-button>
       </div>
     </div>
   </el-card>
@@ -21,10 +21,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
 import { getTasks, updateTask } from '@/api/task'
 import { ElMessage } from 'element-plus'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const tasks = ref([])
 

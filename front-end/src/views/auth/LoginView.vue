@@ -2,18 +2,18 @@
   <div class="login-container">
     <el-card class="login-card">
       <template #header>
-        <h2>Login</h2>
+        <h2>{{ $t('auth.login') }}</h2>
       </template>
       <el-form :model="form" label-width="120px">
-        <el-form-item label="Username">
+        <el-form-item :label="$t('auth.username')">
           <el-input v-model="form.username" />
         </el-form-item>
-        <el-form-item label="Password">
+        <el-form-item :label="$t('auth.password')">
           <el-input v-model="form.password" type="password" show-password />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="loading" @click="onSubmit">Login</el-button>
-          <el-button @click="onRegister">Register</el-button>
+          <el-button type="primary" :loading="loading" @click="onSubmit">{{ $t('auth.login') }}</el-button>
+          <el-button @click="onRegister">{{ $t('auth.register') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -23,11 +23,13 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { register } from '@/api/auth'
 
 const router = useRouter()
+const { t } = useI18n()
 const userStore = useUserStore()
 const loading = ref(false)
 
@@ -38,7 +40,7 @@ const form = reactive({
 
 const onSubmit = async () => {
   if (!form.username || !form.password) {
-    ElMessage.warning('Please enter username and password')
+    ElMessage.warning(t('auth.enterUsernamePassword'))
     return
   }
   
@@ -46,13 +48,13 @@ const onSubmit = async () => {
   try {
     const success = await userStore.login(form)
     if (success) {
-      ElMessage.success('Login successful')
+      ElMessage.success(t('auth.loginSuccess'))
       router.push('/dashboard')
     } else {
-      ElMessage.error('Login failed')
+      ElMessage.error(t('auth.loginFailed'))
     }
   } catch {
-    ElMessage.error('An error occurred')
+    ElMessage.error(t('auth.errorOccurred'))
   } finally {
     loading.value = false
   }
@@ -60,15 +62,15 @@ const onSubmit = async () => {
 
 const onRegister = async () => {
    if (!form.username || !form.password) {
-    ElMessage.warning('Please enter username and password to register')
+    ElMessage.warning(t('auth.enterToRegister'))
     return
   }
   
   try {
     await register(form)
-    ElMessage.success('Registration successful! Please login.')
+    ElMessage.success(t('auth.registerSuccess'))
   } catch (e) {
-    ElMessage.error('Registration failed: ' + e.message)
+    ElMessage.error(t('auth.registerFailed') + e.message)
   }
 }
 </script>

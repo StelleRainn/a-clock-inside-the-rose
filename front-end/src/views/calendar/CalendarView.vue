@@ -1,8 +1,8 @@
 <template>
   <div class="calendar-view">
     <div class="page-header">
-      <h1>Activity Calendar</h1>
-      <p class="subtitle">Track your focus journey</p>
+      <h1>{{ $t('calendar.title') }}</h1>
+      <p class="subtitle">{{ $t('calendar.subtitle') }}</p>
     </div>
 
     <el-row :gutter="24">
@@ -10,8 +10,8 @@
         <WidgetHeatmap class="mb-4" />
         <!-- Placeholder for Weekly Report -->
         <el-card class="glass-card mb-4">
-          <template #header><h3>Weekly Report</h3></template>
-          <div class="placeholder-content">Weekly analytics coming soon...</div>
+          <template #header><h3>{{ $t('calendar.weeklyReport') }}</h3></template>
+          <div class="placeholder-content">{{ $t('calendar.weeklyAnalyticsComingSoon') }}</div>
         </el-card>
       </el-col>
       

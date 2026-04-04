@@ -8,6 +8,8 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
+import i18n from './locales'
+import './assets/styles/fonts.css'
 
 const app = createApp(App)
 
@@ -16,6 +18,7 @@ pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
 
 app.use(router)
+app.use(i18n)
 app.use(ElementPlus)
 
 // Register all icons globally

@@ -5,13 +5,13 @@
         <el-progress type="dashboard" :percentage="dailyGoalPercentage" :color="colors">
           <template #default>
             <span class="percentage-value">{{ Math.round(pomodoroStore.todayFocusSeconds / 60) }}m</span>
-            <span class="percentage-label">Focused</span>
+            <span class="percentage-label">{{ $t('widgets.focused') }}</span>
           </template>
         </el-progress>
       </div>
       <div class="stat-details">
-        <h3>Today's Focus</h3>
-        <p>{{ pomodoroStore.completedPomodoros }} Pomodoros completed</p>
+        <h3>{{ $t('widgets.todaysFocus') }}</h3>
+        <p>{{ pomodoroStore.completedPomodoros }} {{ $t('widgets.pomodorosCompleted') }}</p>
       </div>
     </div>
   </el-card>
@@ -19,8 +19,10 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { usePomodoroStore } from '@/stores/pomodoro'
 
+const { t } = useI18n()
 const pomodoroStore = usePomodoroStore()
 const dailyGoalMinutes = 120 // Example goal
 

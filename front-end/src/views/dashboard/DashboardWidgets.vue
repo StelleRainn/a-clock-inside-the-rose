@@ -3,7 +3,7 @@
     <!-- Header with Edit Mode Toggle -->
     <div class="widgets-header">
       <div class="left">
-        <h2>My Space</h2>
+        <h2>{{ $t('widgets.mySpace') }}</h2>
       </div>
       <div class="right">
         <el-button 
@@ -12,14 +12,14 @@
           link 
           @click="isEditMode = true"
         >
-          Customize
+          {{ $t('widgets.customize') }}
         </el-button>
         <div v-else class="edit-controls">
           <el-button type="success" size="small" @click="showAddWidget = true">
-            <el-icon><Plus /></el-icon> Add Widget
+            <el-icon><Plus /></el-icon> {{ $t('widgets.addCard') }}
           </el-button>
           <el-button type="info" size="small" @click="isEditMode = false">
-            Done
+            {{ $t('widgets.done') }}
           </el-button>
         </div>
       </div>
@@ -27,10 +27,10 @@
 
     <!-- Empty State -->
     <div v-if="activeWidgets.length === 0" class="empty-state">
-      <h3>Customize your space</h3>
+      <h3>{{ $t('widgets.emptyTitle') }}</h3>
       <div class="add-widget-card" @click="showAddWidget = true">
         <el-icon :size="24"><Plus /></el-icon>
-        <span>Add Widget</span>
+        <span>{{ $t('widgets.addCard') }}</span>
       </div>
     </div>
 
@@ -53,7 +53,7 @@
     </div>
 
     <!-- Widget Store Drawer -->
-    <el-drawer v-model="showAddWidget" title="Widget Store" direction="rtl" size="300px">
+    <el-drawer v-model="showAddWidget" :title="$t('widgets.storeTitle')" direction="rtl" size="300px">
       <div class="widget-store">
         <div 
           v-for="item in availableWidgets" 
@@ -65,8 +65,8 @@
             <el-icon :size="32"><component :is="item.icon" /></el-icon>
           </div>
           <div class="item-info">
-            <h4>{{ item.name }}</h4>
-            <p>{{ item.desc }}</p>
+            <h4>{{ $t(item.nameKey) }}</h4>
+            <p>{{ $t(item.descKey) }}</p>
           </div>
           <el-button size="small" icon="Plus" circle />
         </div>
@@ -77,10 +77,13 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { Plus, Close, Calendar, PieChart, List } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
+import { Plus, Close, Calendar, PieChart, List, ChatDotSquare } from '@element-plus/icons-vue'
 import WidgetHeatmap from '@/components/widgets/WidgetHeatmap.vue'
 import WidgetFocusRing from '@/components/widgets/WidgetFocusRing.vue'
 import WidgetTodoList from '@/components/widgets/WidgetTodoList.vue'
+
+const { t } = useI18n()
 
 const isEditMode = ref(false)
 const showAddWidget = ref(false)
@@ -112,27 +115,25 @@ watch(activeWidgets, (val) => {
 const availableWidgets = [
   { 
     type: 'heatmap', 
-    name: 'Calendar Heatmap', 
-    desc: 'Visualize your consistency', 
+    nameKey: 'widgets.heatmap', 
+    descKey: 'widgets.heatmapDesc', 
     icon: Calendar,
     defaultCols: 2 
   },
   { 
     type: 'focus-ring', 
-    name: 'Today\'s Focus', 
-    desc: 'Daily progress ring', 
+    nameKey: 'widgets.focusRing', 
+    descKey: 'widgets.focusRingDesc', 
     icon: PieChart,
     defaultCols: 1
   },
   { 
     type: 'todo-list', 
-    name: 'Todo List', 
-    desc: 'Quick task access', 
+    nameKey: 'widgets.todoList', 
+    descKey: 'widgets.todoListDesc', 
     icon: List,
     defaultCols: 1
   },
-  // Placeholder for Quote
-  // { type: 'quote', name: 'Quote', desc: 'Daily inspiration', icon: ChatDotSquare, defaultCols: 2 }
 ]
 
 const getComponent = (type) => {

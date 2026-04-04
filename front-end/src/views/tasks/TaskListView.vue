@@ -3,8 +3,8 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>Task Management</span>
-          <el-button type="primary" @click="openCreateDialog">Add Task</el-button>
+          <span>{{ $t('tasks.title') }}</span>
+          <el-button type="primary" @click="openCreateDialog">{{ $t('tasks.addTask') }}</el-button>
         </div>
       </template>
 
@@ -12,7 +12,7 @@
       <div class="filter-bar">
         <el-input
           v-model="searchQuery"
-          placeholder="Search task title..."
+          :placeholder="$t('tasks.searchPlaceholder')"
           prefix-icon="Search"
           style="width: 250px"
           clearable
@@ -22,7 +22,7 @@
           v-model="selectedFilterTags" 
           multiple 
           collapse-tags
-          placeholder="Filter by Tags" 
+          :placeholder="$t('tasks.filterByTags')" 
           style="width: 200px"
           clearable
         >
@@ -36,23 +36,23 @@
           </el-option>
         </el-select>
 
-        <el-select v-model="sortBy" placeholder="Sort by" style="width: 150px">
-          <el-option label="Manual (Drag)" value="manual" />
-          <el-option label="Created Date" value="createdAt" />
-          <el-option label="Due Date" value="dueDate" />
-          <el-option label="Priority" value="priority" />
-          <el-option label="Status" value="status" />
+        <el-select v-model="sortBy" :placeholder="$t('tasks.sortBy')" style="width: 150px">
+          <el-option :label="$t('tasks.sortManual')" value="manual" />
+          <el-option :label="$t('tasks.sortCreated')" value="createdAt" />
+          <el-option :label="$t('tasks.sortDue')" value="dueDate" />
+          <el-option :label="$t('tasks.sortPriority')" value="priority" />
+          <el-option :label="$t('tasks.sortStatus')" value="status" />
         </el-select>
 
         <el-button @click="toggleSortOrder" :icon="sortOrder === 'asc' ? 'SortUp' : 'SortDown'" :disabled="sortBy === 'manual'">
-          {{ sortOrder === 'asc' ? 'Asc' : 'Desc' }}
+          {{ sortOrder === 'asc' ? $t('tasks.asc') : $t('tasks.desc') }}
         </el-button>
 
-        <el-button @click="resetFilters" icon="RefreshLeft" type="info" plain>Reset</el-button>
+        <el-button @click="resetFilters" icon="RefreshLeft" type="info" plain>{{ $t('tasks.reset') }}</el-button>
       </div>
 
       <el-tabs v-model="activeName">
-        <el-tab-pane label="List View" name="list">
+        <el-tab-pane :label="$t('tasks.listView')" name="list">
           <el-table 
             :data="paginatedTasks" 
             style="width: 100%" 
@@ -66,11 +66,11 @@
               <template #default="props">
                 <div class="subtask-container">
                   <div class="subtask-header">
-                    <h4>Subtasks ({{ props.row.subtasks ? props.row.subtasks.length : 0 }})</h4>
-                    <el-button size="small" type="primary" link @click="openAddSubtask(props.row)">+ Add Subtask</el-button>
+                    <h4>{{ $t('tasks.subtasks') }} ({{ props.row.subtasks ? props.row.subtasks.length : 0 }})</h4>
+                    <el-button size="small" type="primary" link @click="openAddSubtask(props.row)">{{ $t('tasks.addSubtask') }}</el-button>
                   </div>
                   <div v-if="!props.row.subtasks || props.row.subtasks.length === 0" class="no-subtasks">
-                    No subtasks yet.
+                    {{ $t('tasks.noSubtasks') }}
                   </div>
                   <ul v-else class="subtask-list">
                     <li v-for="sub in props.row.subtasks" :key="sub.id" class="subtask-item">
@@ -94,22 +94,22 @@
               </template>
             </el-table-column>
 
-            <el-table-column prop="title" label="Task Name" min-width="200">
+            <el-table-column prop="title" :label="$t('tasks.taskName')" min-width="200">
               <template #default="scope">
                 <div class="task-info-cell">
                   <span :class="{'overdue-text': isOverdue(scope.row), 'neardue-text': isNearDue(scope.row)}">
                     {{ scope.row.title }}
                   </span>
-                  <el-tooltip v-if="isOverdue(scope.row)" content="Overdue!" placement="top">
+                  <el-tooltip v-if="isOverdue(scope.row)" :content="$t('tasks.overdue')" placement="top">
                     <el-icon class="alert-icon overdue"><Warning /></el-icon>
                   </el-tooltip>
-                  <el-tooltip v-else-if="isNearDue(scope.row)" content="Due soon!" placement="top">
+                  <el-tooltip v-else-if="isNearDue(scope.row)" :content="$t('tasks.dueSoon')" placement="top">
                     <el-icon class="alert-icon neardue"><WarningFilled /></el-icon>
                   </el-tooltip>
                   
                   <!-- Mobile Meta Info -->
                   <div v-if="isMobile" class="mobile-meta">
-                    <el-tag size="small" :type="getPriorityType(scope.row.priority)" effect="plain" class="mr-1">{{ scope.row.priority }}</el-tag>
+                    <el-tag size="small" :type="getPriorityType(scope.row.priority)" effect="plain" class="mr-1">{{ $t(`tasks.${scope.row.priority.toLowerCase()}`) }}</el-tag>
                     <span v-if="scope.row.dueDate" class="mobile-date" :class="{'overdue-text': isOverdue(scope.row)}">
                       {{ formatDateShort(scope.row.dueDate) }}
                     </span>
@@ -117,7 +117,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="Tags" width="200" v-if="!isMobile">
+            <el-table-column :label="$t('tasks.tags')" width="200" v-if="!isMobile">
               <template #default="scope">
                 <el-tag 
                   v-for="tag in scope.row.tags" 
@@ -132,28 +132,28 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="priority" label="Priority" width="120" v-if="!isMobile">
+            <el-table-column prop="priority" :label="$t('tasks.priority')" width="120" v-if="!isMobile">
               <template #default="scope">
-                <el-tag :type="getPriorityType(scope.row.priority)">{{ scope.row.priority }}</el-tag>
+                <el-tag :type="getPriorityType(scope.row.priority)">{{ $t(`tasks.${scope.row.priority.toLowerCase()}`) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="status" label="Status" width="120" v-if="!isMobile">
+            <el-table-column prop="status" :label="$t('tasks.status')" width="120" v-if="!isMobile">
                <template #default="scope">
-                <el-tag :type="getStatusType(scope.row.status)">{{ scope.row.status }}</el-tag>
+                <el-tag :type="getStatusType(scope.row.status)">{{ formatStatus(scope.row.status) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="dueDate" label="Due Date" width="180" v-if="!isMobile">
+            <el-table-column prop="dueDate" :label="$t('tasks.dueDate')" width="180" v-if="!isMobile">
                <template #default="scope">
                  <span :class="{'overdue-text': isOverdue(scope.row), 'neardue-text': isNearDue(scope.row)}">
                    {{ formatDate(scope.row.dueDate) }}
                  </span>
                </template>
             </el-table-column>
-            <el-table-column label="Actions" :width="isMobile ? 100 : 200" fixed="right">
+            <el-table-column :label="$t('tasks.actions')" :width="isMobile ? 100 : 200" fixed="right">
               <template #default="scope">
                 <div class="action-buttons">
-                  <el-button v-if="!isMobile" size="small" @click.stop="handleEdit(scope.row)">Edit</el-button>
-                  <el-button v-if="!isMobile" size="small" type="danger" @click.stop="handleDelete(scope.row)">Delete</el-button>
+                  <el-button v-if="!isMobile" size="small" @click.stop="handleEdit(scope.row)">{{ $t('tasks.edit') }}</el-button>
+                  <el-button v-if="!isMobile" size="small" type="danger" @click.stop="handleDelete(scope.row)">{{ $t('tasks.delete') }}</el-button>
                   
                   <!-- Mobile Actions -->
                   <el-button v-if="isMobile" size="small" icon="Edit" circle @click.stop="handleEdit(scope.row)" />
@@ -176,7 +176,7 @@
             />
           </div>
         </el-tab-pane>
-        <el-tab-pane label="Kanban View" name="kanban">
+        <el-tab-pane :label="$t('tasks.kanbanView')" name="kanban">
           <div class="kanban-board">
             <div class="kanban-column" v-for="status in ['TODO', 'IN_PROGRESS', 'DONE']" :key="status">
               <div class="column-header">
@@ -226,7 +226,7 @@
                       </el-tag>
                     </div>
                     <div class="card-meta">
-                      <el-tag size="small" :type="getPriorityType(element.priority)">{{ element.priority }}</el-tag>
+                      <el-tag size="small" :type="getPriorityType(element.priority)">{{ $t(`tasks.${element.priority.toLowerCase()}`) }}</el-tag>
                       <span class="card-date" v-if="element.dueDate" :class="{'overdue-text': isOverdue(element), 'neardue-text': isNearDue(element)}">
                         {{ formatDateShort(element.dueDate) }}
                       </span>
@@ -243,22 +243,22 @@
     <!-- Task Dialog -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle">
       <el-form :model="taskForm" label-width="100px">
-        <el-form-item label="Title">
+        <el-form-item :label="$t('tasks.titleLabel')">
           <el-input v-model="taskForm.title" />
         </el-form-item>
-        <el-form-item label="Description">
+        <el-form-item :label="$t('tasks.descLabel')">
           <el-input v-model="taskForm.description" type="textarea" />
         </el-form-item>
         
         <!-- Tag Selection -->
-        <el-form-item label="Tags">
+        <el-form-item :label="$t('tasks.tags')">
           <el-select
             v-model="selectedTagIds"
             multiple
             filterable
             allow-create
             default-first-option
-            placeholder="Select or create tags"
+            :placeholder="$t('tasks.selectOrCreateTags')"
             @change="handleTagChange"
           >
             <el-option
@@ -272,43 +272,43 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="Priority">
+        <el-form-item :label="$t('tasks.priorityLabel')">
           <el-select v-model="taskForm.priority">
-            <el-option label="Low" value="LOW" />
-            <el-option label="Medium" value="MEDIUM" />
-            <el-option label="High" value="HIGH" />
+            <el-option :label="$t('tasks.low')" value="LOW" />
+            <el-option :label="$t('tasks.medium')" value="MEDIUM" />
+            <el-option :label="$t('tasks.high')" value="HIGH" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Status">
+        <el-form-item :label="$t('tasks.statusLabel')">
           <el-select v-model="taskForm.status">
-            <el-option label="To Do" value="TODO" />
-            <el-option label="In Progress" value="IN_PROGRESS" />
-            <el-option label="Done" value="DONE" />
+            <el-option :label="$t('tasks.todo')" value="TODO" />
+            <el-option :label="$t('tasks.inProgress')" value="IN_PROGRESS" />
+            <el-option :label="$t('tasks.done')" value="DONE" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Due Date">
+        <el-form-item :label="$t('tasks.dueDateLabel')">
           <el-date-picker
             v-model="taskForm.dueDate"
             type="datetime"
-            placeholder="Select date and time"
+            :placeholder="$t('tasks.selectDateTime')"
           />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">Cancel</el-button>
-          <el-button type="primary" @click="submitTask">Confirm</el-button>
+          <el-button @click="dialogVisible = false">{{ $t('tasks.cancel') }}</el-button>
+          <el-button type="primary" @click="submitTask">{{ $t('tasks.confirm') }}</el-button>
         </span>
       </template>
     </el-dialog>
 
     <!-- Subtask Add Dialog -->
-    <el-dialog v-model="subtaskDialogVisible" title="Add Subtask" width="30%">
-      <el-input v-model="newSubtaskTitle" placeholder="Enter subtask title" @keyup.enter="submitSubtask" />
+    <el-dialog v-model="subtaskDialogVisible" :title="$t('tasks.addSubtask')" width="30%">
+      <el-input v-model="newSubtaskTitle" :placeholder="$t('tasks.subtaskTitlePlaceholder')" @keyup.enter="submitSubtask" />
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="subtaskDialogVisible = false">Cancel</el-button>
-          <el-button type="primary" @click="submitSubtask">Add</el-button>
+          <el-button @click="subtaskDialogVisible = false">{{ $t('tasks.cancel') }}</el-button>
+          <el-button type="primary" @click="submitSubtask">{{ $t('tasks.add') }}</el-button>
         </span>
       </template>
     </el-dialog>
@@ -318,6 +318,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, reactive, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getTasks, createTask, updateTask, deleteTask, reorderTasks } from '@/api/task'
 import { getTags, createTag } from '@/api/tag'
 import { createSubtask, updateSubtask, deleteSubtask } from '@/api/subtask'
@@ -328,6 +329,7 @@ import Sortable from 'sortablejs'
 import { Warning, WarningFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
+const { t } = useI18n()
 const activeName = ref('list')
 const tableData = ref([])
 const loading = ref(false)
@@ -348,7 +350,7 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
 
-const dialogTitle = ref('Create Task')
+const dialogTitle = ref(t('tasks.createTask'))
 const dialogVisible = ref(false)
 const isEditMode = ref(false)
 const currentTaskId = ref(null)
@@ -692,14 +694,14 @@ const openCreateDialog = () => {
     return
   }
   isEditMode.value = false
-  dialogTitle.value = 'Create Task'
+  dialogTitle.value = t('tasks.createTask')
   resetForm()
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
   isEditMode.value = true
-  dialogTitle.value = 'Edit Task'
+  dialogTitle.value = t('tasks.editTask')
   currentTaskId.value = row.id
   taskForm.title = row.title
   taskForm.description = row.description
@@ -713,21 +715,21 @@ const handleEdit = (row) => {
 
 const handleDelete = (row) => {
   ElMessageBox.confirm(
-    'Are you sure to delete this task?',
-    'Warning',
+    t('tasks.deleteConfirmMsg'),
+    t('tasks.deleteConfirmTitle'),
     {
-      confirmButtonText: 'OK',
-      cancelButtonText: 'Cancel',
+      confirmButtonText: t('tasks.ok'),
+      cancelButtonText: t('tasks.cancel'),
       type: 'warning',
     }
   )
     .then(async () => {
       try {
         await deleteTask(row.id)
-        ElMessage.success('Delete completed')
+        ElMessage.success(t('tasks.deleteSuccess'))
         fetchTasks()
       } catch {
-        ElMessage.error('Delete failed')
+        ElMessage.error(t('tasks.deleteFailed'))
       }
     })
     .catch(() => {})
@@ -741,7 +743,7 @@ const submitTask = async () => {
   }
 
   if (!taskForm.title || !taskForm.title.trim()) {
-    ElMessage.warning('Title is required')
+    ElMessage.warning(t('tasks.titleRequired'))
     return
   }
   
@@ -765,15 +767,15 @@ const submitTask = async () => {
   try {
     if (isEditMode.value) {
       await updateTask(currentTaskId.value, payload)
-      ElMessage.success('Task updated')
+      ElMessage.success(t('tasks.taskUpdated'))
     } else {
       await createTask(payload)
-      ElMessage.success('Task created')
+      ElMessage.success(t('tasks.taskCreated'))
     }
     dialogVisible.value = false
     fetchTasks()
   } catch {
-    ElMessage.error('Operation failed')
+    ElMessage.error(t('tasks.operationFailed'))
   }
 }
 
@@ -817,9 +819,9 @@ const formatDateShort = (dateStr) => {
 
 const formatStatus = (status) => {
   const map = {
-    'TODO': 'To Do',
-    'IN_PROGRESS': 'In Progress',
-    'DONE': 'Done'
+    'TODO': t('tasks.todo'),
+    'IN_PROGRESS': t('tasks.inProgress'),
+    'DONE': t('tasks.done')
   }
   return map[status] || status
 }
