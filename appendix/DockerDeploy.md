@@ -120,6 +120,38 @@
    docker-compose up -d
    ```
 
+### Q5: 每次 git pull 后执行 Docker 构建，卡在前端 `pnpm run build` 很久甚至导致 SSH 断线，怎么办？
+**这是云服务器（尤其是 2GB 内存的小型机）非常典型的“内存耗尽 (OOM)”问题。**
+现代前端项目打包（Vite/Webpack）会占用极大的内存（经常瞬间飙升到 1.5GB 以上）。当服务器物理内存耗尽时，系统要么会拼命把内存数据写入硬盘（导致系统卡死），要么会直接杀掉你的进程甚至 SSH 连接。
+
+**解决方案一：限制 Node.js 的打包内存（已在本地修复）**
+我已经帮你修改了本地的 `front-end/Dockerfile`，在构建命令前加上了限制：
+`RUN NODE_OPTIONS="--max-old-space-size=1024" pnpm run build`
+这样可以强制 Node.js 在垃圾回收上更勤快，尽量不超出 1GB 内存。
+
+**解决方案二（终极推荐）：为云服务器增加虚拟内存 (Swap)**
+如果方案一还是卡，说明服务器连 1GB 的空余内存都挤不出来。你需要给服务器手动分配一块“硬盘空间”当作内存用（即 Swap）。通过 SSH 连上云服务器，依次执行以下命令：
+```bash
+# 1. 创建一个 2GB 大小的虚拟内存文件（大约需要十几秒）
+sudo fallocate -l 2G /swapfile
+
+# 2. 设置正确的权限（只有 root 可以读写）
+sudo chmod 600 /swapfile
+
+# 3. 将文件格式化为 swap 格式
+sudo mkswap /swapfile
+
+# 4. 启用虚拟内存
+sudo swapon /swapfile
+
+# 5. 验证是否成功（如果你看到 Swap 一行有 2.0G，说明成功了！）
+free -h
+
+# 6. (可选) 让虚拟内存永久生效，避免重启服务器后失效
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+增加 Swap 后，虽然打包时间依然可能需要一两分钟（因为硬盘比内存慢），但**绝对不会再出现卡死或断线的问题**了。
+
 ---
 
 > **行动锚点**: 本文档为动态更新文档，每完成一个阶段的任务，我们将在此处打钩 `[x]` 并记录相关细节。

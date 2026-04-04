@@ -1,5 +1,40 @@
 # 云主机Terminal日志
 
+#### 4月4日 15：31
+
+root@iZ0jldq0yd4sa1m00vxvqmZ:/opt/acir-deploy# docker-compose up -d --build
+[+] Building 16.8s (27/30)                                                                               docker:default
+ => => exporting layers                                                                                            0.0s
+ => => exporting manifest sha256:b362e5a01e15cac6d8fd1dc1ec66b76ad45276a77249f2e2a947b2dc880e653c                  0.0s
+ => => exporting config sha256:18d356d1a1a2d7aff5423d93cbd34b8d20fad493c3ddfe5ffe25efc95c86c5c1                    0.0s
+ => => exporting attestation manifest sha256:6ad9ac331a15e9ccac73a80335f42e4759f25937580b259cd27eba0e7b3f2c35      0.0s
+ => => exporting manifest list sha256:58e79ef1571825da63805c9eb29c268d943d6bfe5ab009530987713183f9418a             0.0s
+ => => naming to docker.io/library/acir-deploy-acir-backend:latest                                                 0.0s
+ => => unpacking to docker.io/library/acir-deploy-acir-backend:latest                                              0.0s
+ => [acir-frontend internal] load build definition from Dockerfile                                                 0.0s
+ => => transferring dockerfile: 842B                                                                               0.0s
+ => [acir-frontend internal] load metadata for docker.io/library/nginx:alpine                                      0.4s
+ => [acir-frontend internal] load metadata for docker.io/library/node:20-alpine                                    1.5s
+ => [acir-frontend internal] load .dockerignore                                                                    0.0s
+ => => transferring context: 2B                                                                                    0.0s
+ => [acir-frontend build-stage 1/6] FROM docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db  0.0s
+ => => resolve docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb  0.0s
+ => [acir-frontend internal] load build context                                                                    0.0s
+ => => transferring context: 3.03kB                                                                                0.0s
+ => [acir-frontend production-stage 1/3] FROM docker.io/library/nginx:alpine@sha256:eb05700fe7baa6890b74278e39b66  0.0s
+ => => resolve docker.io/library/nginx:alpine@sha256:eb05700fe7baa6890b74278e39b66b2ed1326831f9ec3ed4bdc6361a4ac2  0.0s
+ => CACHED [acir-frontend build-stage 2/6] WORKDIR /app                                                            0.0s
+ => CACHED [acir-frontend build-stage 3/6] COPY package.json pnpm-lock.yaml ./                                     0.0s
+ => CACHED [acir-frontend build-stage 4/6] RUN npm install -g pnpm && pnpm install                                 0.0s
+ => CACHED [acir-frontend build-stage 5/6] COPY . .                                                                0.0s
+ => [acir-frontend build-stage 6/6] RUN pnpm run build                                                            13.2s
+ => => # > front-end@0.0.0 build /app                                                                                  
+ => => # > vite build                                                                                                  
+ => => # vite v7.3.1 building client environment for production...                                                     
+ => => # transforming...                                                                                               
+
+
+
 #### 4 月 4 日 10：49
 root@iZ0jldq0yd4sa1m00vxvqmZ:/opt/acir-deploy# docker-compose up -d --build
 [+] Building 2.6s (31/31) FINISHED                                                                                     docker:default
