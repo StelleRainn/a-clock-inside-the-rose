@@ -225,5 +225,13 @@ export default {
     exportTasksFailed: '导出任务失败',
     recordsExported: '专注记录导出成功',
     exportRecordsFailed: '导出记录失败'
+  },
+  footer: {
+    designedBy: '时雨蔷薇，匠心呈现',
+    gdufs: '广东外语外贸大学',
+    knowMore: '了解时雨蔷薇',
+    personalWebsite: '个人总站',
+    separator1: '｜',
+    separator2: '｜'
   }
 }

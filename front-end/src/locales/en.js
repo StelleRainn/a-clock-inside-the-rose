@@ -225,5 +225,13 @@ export default {
     exportTasksFailed: 'Failed to export tasks',
     recordsExported: 'Focus records exported successfully',
     exportRecordsFailed: 'Failed to export records'
+  },
+  footer: {
+    designedBy: 'Designed by StelleRainn in ',
+    gdufs: 'GDUFS',
+    knowMore: 'Know more about me.',
+    personalWebsite: 'Person Website',
+    separator1: '',
+    separator2: ' · '
   }
 }

@@ -8,20 +8,35 @@
         "type": "tabs",
         "children": [
           {
-            "id": "6e38f3b6a0c5bd45",
+            "id": "cf34d213c1dd598a",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "appendix/初稿v3.md",
+                "file": "appendix/ACIR完整实现权威概述.md",
                 "mode": "preview",
-                "source": true
+                "source": false
               },
               "icon": "lucide-file",
-              "title": "初稿v3"
+              "title": "ACIR完整实现权威概述"
+            }
+          },
+          {
+            "id": "253cd20f8184704f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "appendix/ACIR代码精读.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "ACIR代码精读"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -78,7 +93,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 249.5
+    "width": 249.5,
+    "collapsed": true
   },
   "right": {
     "id": "235112b969d6d8fc",
@@ -156,13 +172,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "appendix/初稿v3.md",
+                "file": "appendix/ACIR代码精读.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "初稿v3 的大纲"
+              "title": "ACIR代码精读 的大纲"
             }
           }
         ],
@@ -170,7 +186,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 309.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -183,8 +199,12 @@
       "bases:新建数据库": false
     }
   },
-  "active": "6e38f3b6a0c5bd45",
+  "active": "253cd20f8184704f",
   "lastOpenFiles": [
+    "appendix/ACIR完整实现权威概述.md",
+    "appendix/权威概述-写作指南.md",
+    "appendix/初稿v3.md",
+    "appendix/ACIROverviewGuide.md",
     "front-end/dist/index.html",
     "front-end/dist/assets/index-D4MoBWGW.js",
     "front-end/dist/assets/index-BJoz2R-h.css",
@@ -198,7 +218,6 @@
     "appendix/ACIRIntelligent.md",
     "appendix/初稿v2.md",
     "appendix/论文初稿 3 版.docx",
-    "appendix/初稿v3.md",
     "appendix/初高v3.md",
     "appendix/初稿v1.md",
     "appendix/Proposal.md",
@@ -221,11 +240,9 @@
     "appendix/ThesisOutline.md",
     "appendix/proposal.md",
     "appendix/plans.md",
-    "front-end/src/views/ai/AiAssistantView.vue",
     "appendix/milestone.md",
     "optimized.md",
     "milestone.md",
-    "proposal.md",
-    "plans.md"
+    "proposal.md"
   ]
 }

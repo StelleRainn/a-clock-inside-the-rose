@@ -54,6 +54,7 @@
       <el-tabs v-model="activeName">
         <el-tab-pane :label="$t('tasks.listView')" name="list">
           <el-table 
+            :key="tableKey"
             :data="paginatedTasks" 
             style="width: 100%" 
             v-loading="loading" 
@@ -149,15 +150,15 @@
                  </span>
                </template>
             </el-table-column>
-            <el-table-column :label="$t('tasks.actions')" :width="isMobile ? 100 : 200" fixed="right">
+            <el-table-column :label="$t('tasks.actions')" :width="isMobile ? 100 : 160" fixed="right" align="center">
               <template #default="scope">
                 <div class="action-buttons">
-                  <el-button v-if="!isMobile" size="small" @click.stop="handleEdit(scope.row)">{{ $t('tasks.edit') }}</el-button>
-                  <el-button v-if="!isMobile" size="small" type="danger" @click.stop="handleDelete(scope.row)">{{ $t('tasks.delete') }}</el-button>
-                  
-                  <!-- Mobile Actions -->
-                  <el-button v-if="isMobile" size="small" icon="Edit" circle @click.stop="handleEdit(scope.row)" />
-                  <el-button v-if="isMobile" size="small" type="danger" icon="Delete" circle @click.stop="handleDelete(scope.row)" />
+                  <div class="custom-action-btn edit-btn" @click.stop="handleEdit(scope.row)">
+                    <el-icon><EditPen /></el-icon>
+                  </div>
+                  <div class="custom-action-btn delete-btn" @click.stop="handleDelete(scope.row)">
+                    <el-icon><Delete /></el-icon>
+                  </div>
                 </div>
               </template>
             </el-table-column>
@@ -369,6 +370,7 @@ const searchQuery = ref('')
 const selectedFilterTags = ref([])
 const sortBy = ref('manual') // Default manual sort
 const sortOrder = ref('asc') // asc or desc
+const tableKey = ref(0) // Key to force re-render table
 
 const taskForm = reactive({
   title: '',
@@ -588,7 +590,10 @@ const initSortable = () => {
   if (!table) return
 
   // Destroy previous instance if exists
-  if (sortableInstance) sortableInstance.destroy()
+  if (sortableInstance) {
+    sortableInstance.destroy()
+    sortableInstance = null
+  }
 
   // Only enable if manual sort and no filters
   if (sortBy.value !== 'manual' || searchQuery.value || selectedFilterTags.value.length > 0) {
@@ -609,27 +614,33 @@ const initSortable = () => {
     onEnd: async ({ newIndex, oldIndex }) => {
       if (newIndex === oldIndex) return
       
+      const currentList = [...paginatedTasks.value]
+      
       // Check if moving into Done section
-      const currentList = paginatedTasks.value
       const firstDoneIndex = currentList.findIndex(t => t.status === 'DONE')
       
       if (firstDoneIndex !== -1 && newIndex >= firstDoneIndex) {
         ElMessage.warning('Cannot drag tasks into Done section')
         // Force update to revert DOM
-        const temp = [...tableData.value]
-        tableData.value = []
-        nextTick(() => {
-          tableData.value = temp
-        })
+        tableKey.value++
         return
       }
       
-      // Modify tableData directly
-      const movedItem = tableData.value.splice(oldIndex, 1)[0]
-      tableData.value.splice(newIndex, 0, movedItem)
+      // Modify current list directly
+      const movedItem = currentList.splice(oldIndex, 1)[0]
+      currentList.splice(newIndex, 0, movedItem)
 
-      // Get new order of IDs
-      const newOrderIds = tableData.value.map(t => t.id)
+      // Replace the current page's slice in the fully filtered array
+      const allTasks = [...filteredTasks.value]
+      const start = (currentPage.value - 1) * pageSize.value
+      allTasks.splice(start, pageSize.value, ...currentList)
+
+      // Get new order of IDs from the ALL tasks to ensure position integrity
+      const newOrderIds = allTasks.map(t => t.id)
+      
+      // Update local state and force re-render
+      tableData.value = allTasks
+      tableKey.value++
       
       try {
         await reorderTasks(newOrderIds)
@@ -644,7 +655,7 @@ const initSortable = () => {
 // Watchers to re-init or destroy sortable
 // watch is already imported at top
 
-watch([sortBy, searchQuery, selectedFilterTags, activeName, loading], () => {
+watch([sortBy, searchQuery, selectedFilterTags, activeName, loading, tableKey], () => {
   nextTick(() => {
     if (activeName.value === 'list' && !loading.value) {
       initSortable()
@@ -1137,7 +1148,57 @@ onMounted(() => {
 
 .action-buttons {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  justify-content: center;
+}
+
+.custom-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: transparent;
+  font-size: 16px;
+}
+
+.custom-action-btn.edit-btn {
+  border: 1px solid var(--el-color-primary-light-5);
+  color: var(--el-color-primary);
+}
+
+.custom-action-btn.edit-btn:hover {
+  background: var(--el-color-primary-light-9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+}
+
+.custom-action-btn.delete-btn {
+  border: 1px solid var(--el-color-danger-light-5);
+  color: var(--el-color-danger);
+}
+
+.custom-action-btn.delete-btn:hover {
+  background: var(--el-color-danger-light-9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 108, 108, 0.2);
+}
+
+/* Dark mode overrides for action buttons */
+html.dark .custom-action-btn.edit-btn {
+  border-color: rgba(64, 158, 255, 0.4);
+}
+html.dark .custom-action-btn.edit-btn:hover {
+  background: rgba(64, 158, 255, 0.1);
+}
+html.dark .custom-action-btn.delete-btn {
+  border-color: rgba(245, 108, 108, 0.4);
+}
+html.dark .custom-action-btn.delete-btn:hover {
+  background: rgba(245, 108, 108, 0.1);
 }
 
 .mr-1 {

@@ -17,6 +17,7 @@
           <component :is="Component" />
         </transition>
       </router-view>
+      <GlobalFooter />
     </main>
 
     <!-- Bottom Navigation (Mobile) -->
@@ -40,6 +41,7 @@ import { useRoute } from 'vue-router'
 import HeaderNav from '@/components/HeaderNav.vue'
 import MobileNavBar from '@/components/MobileNavBar.vue'
 import TaskFormDialog from '@/components/TaskFormDialog.vue'
+import GlobalFooter from '@/components/GlobalFooter.vue'
 import { createTask } from '@/api/task'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'

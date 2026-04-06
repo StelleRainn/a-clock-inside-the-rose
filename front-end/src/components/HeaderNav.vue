@@ -8,24 +8,23 @@
     >
       <div class="nav-left">
         <div class="logo">
-          <el-icon :size="24" :color="heroLogoColor"><Timer /></el-icon>
-          <span class="logo-text">ACIR</span>
+          <img src="@/assets/images/ACIR_logo.png" alt="ACIR" class="logo-img" />
         </div>
       </div>
       
       <div class="nav-center">
         <nav class="main-menu">
           <router-link to="/dashboard" class="nav-item" active-class="active">
-            <el-icon><Odometer /></el-icon> {{ $t('nav.focusStation') }}
+          {{ $t('nav.focusStation') }}
           </router-link>
           <router-link to="/calendar" class="nav-item" active-class="active">
-            <el-icon><Calendar /></el-icon> {{ $t('nav.calendar') }}
+          {{ $t('nav.calendar') }}
           </router-link>
           <router-link to="/tasks" class="nav-item" active-class="active">
-            <el-icon><List /></el-icon> {{ $t('nav.tasks') }}
+          {{ $t('nav.tasks') }}
           </router-link>
           <router-link to="/stats" class="nav-item" active-class="active">
-            <el-icon><TrendCharts /></el-icon> {{ $t('nav.stats') }}
+          {{ $t('nav.stats') }}
           </router-link>
         </nav>
       </div>
@@ -73,24 +72,23 @@
     >
       <div class="nav-left">
         <div class="logo">
-          <el-icon :size="24" color="#409eff"><Timer /></el-icon>
-          <span class="logo-text">ACIR</span>
+          <img src="@/assets/images/ACIR_logo.png" alt="ACIR" class="logo-img" />
         </div>
       </div>
       
       <div class="nav-center">
         <nav class="main-menu">
           <router-link to="/dashboard" class="nav-item" active-class="active">
-            <el-icon><Odometer /></el-icon> {{ $t('nav.focusStation') }}
+          {{ $t('nav.focusStation') }}
           </router-link>
           <router-link to="/calendar" class="nav-item" active-class="active">
-            <el-icon><Calendar /></el-icon> {{ $t('nav.calendar') }}
+          {{ $t('nav.calendar') }}
           </router-link>
           <router-link to="/tasks" class="nav-item" active-class="active">
-            <el-icon><List /></el-icon> {{ $t('nav.tasks') }}
+          {{ $t('nav.tasks') }}
           </router-link>
           <router-link to="/stats" class="nav-item" active-class="active">
-            <el-icon><TrendCharts /></el-icon> {{ $t('nav.stats') }}
+          {{ $t('nav.stats') }}
           </router-link>
         </nav>
       </div>
@@ -140,7 +138,7 @@ import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
 import { usePomodoroStore } from '@/stores/pomodoro'
-import { Moon, Sunny, Timer, Odometer, List, TrendCharts, Plus, Calendar } from '@element-plus/icons-vue'
+import { Moon, Sunny, Plus } from '@element-plus/icons-vue'
 import { getUserProfile } from '@/api/user'
 import { FastAverageColor } from 'fast-average-color'
 
@@ -185,8 +183,6 @@ const isHeroLight = computed(() => {
   }
   return currentHeroTheme.value === 'light'
 })
-
-const heroLogoColor = computed(() => isHeroLight.value ? 'white' : '#303133')
 
 const showFixedHeader = computed(() => {
   // If not transparent (e.g. Tasks/Stats page), always show fixed header
@@ -272,6 +268,7 @@ onUnmounted(() => {
   z-index: 1000;
   width: 100%;
   box-sizing: border-box;
+  letter-spacing: 2px;
 }
 
 /* =========================================
@@ -390,6 +387,11 @@ onUnmounted(() => {
   gap: 8px;
   font-weight: 700;
   font-size: 18px;
+}
+.logo-img {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
 }
 .main-menu {
   display: flex;
