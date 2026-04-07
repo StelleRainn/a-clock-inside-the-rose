@@ -2,11 +2,5 @@
 <project version="4">
   <component name="DataSourcePerFileMappings">
     <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/6f2c171b-a698-4224-9d8c-8c6d5989946c/console_1.sql" value="6f2c171b-a698-4224-9d8c-8c6d5989946c" />
-    <file url="file://$PROJECT_DIR$/database/achievements.sql" value="6f2c171b-a698-4224-9d8c-8c6d5989946c" />
-    <file url="file://$PROJECT_DIR$/database/add_gemini_api_key.sql" value="6f2c171b-a698-4224-9d8c-8c6d5989946c" />
-    <file url="file://$PROJECT_DIR$/database/add_position_to_tasks.sql" value="6f2c171b-a698-4224-9d8c-8c6d5989946c" />
-    <file url="file://$PROJECT_DIR$/database/chat_history.sql" value="6f2c171b-a698-4224-9d8c-8c6d5989946c" />
-    <file url="file://$PROJECT_DIR$/database/profile_update.sql" value="6f2c171b-a698-4224-9d8c-8c6d5989946c" />
-    <file url="file://$PROJECT_DIR$/database/schema.sql" value="6f2c171b-a698-4224-9d8c-8c6d5989946c" />
   </component>
 </project>
