@@ -24,6 +24,8 @@ services:
 
   # SpringBoot 后端容器
   acir-backend:
+    image: crpi-wwifswyqz8bp8ddb.cn-wulanchabu.personal.cr.aliyuncs.com/stellerainn/acir-2026:backend-latest
+    platform: linux/amd64
     build:
       context: ./back-end
       dockerfile: Dockerfile
@@ -45,6 +47,8 @@ services:
 
   # Vue3 + Nginx 前端容器
   acir-frontend:
+    image: crpi-wwifswyqz8bp8ddb.cn-wulanchabu.personal.cr.aliyuncs.com/stellerainn/acir-2026:frontend-latest
+    platform: linux/amd64
     build:
       context: ./front-end
       dockerfile: Dockerfile
