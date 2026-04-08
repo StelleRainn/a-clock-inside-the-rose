@@ -501,4 +501,69 @@ const saveChanges = async () => {
   justify-content: flex-end;
   gap: 12px;
 }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .settings-dialog-container {
+    flex-direction: column;
+    height: auto;
+    min-height: 400px;
+    max-height: 65vh;
+    margin: -10px -20px 0 -20px;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+    padding: 10px 16px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+  
+  .sidebar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .menu-item {
+    padding: 10px 16px;
+    border-right: none !important;
+    border-bottom: 3px solid transparent;
+    font-size: 14px;
+  }
+
+  .menu-item.active {
+    border-bottom: 3px solid var(--el-color-primary);
+  }
+
+  .content {
+    padding: 20px 16px;
+  }
+
+  .bg-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+  }
+
+  .bg-preview {
+    height: 70px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+
+  .dialog-footer {
+    padding: 15px 16px 0;
+    justify-content: center;
+  }
+  
+  .dialog-footer .el-button {
+    flex: 1;
+  }
+}
 </style>

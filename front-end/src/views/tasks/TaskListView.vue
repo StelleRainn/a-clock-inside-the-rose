@@ -1,6 +1,6 @@
 <template>
   <div class="task-list-container">
-    <el-card>
+    <el-card class="glass-card main-task-card">
       <template #header>
         <div class="card-header">
           <span>{{ $t('tasks.title') }}</span>
@@ -954,30 +954,43 @@ onMounted(() => {
 .kanban-column {
   flex: 1;
   min-width: 250px;
-  background-color: var(--el-bg-color-page);
-  border-radius: 8px;
-  padding: 10px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  padding: 15px;
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 220px); /* Limit height */
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.5), 0 4px 12px rgba(0, 0, 0, 0.05);
 }
+
+html.dark .kanban-column {
+  background: rgba(30, 30, 30, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 .column-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
   padding: 0 5px;
 }
 .column-header h3 {
   margin: 0;
   font-size: 16px;
   color: var(--el-text-color-primary);
+  font-weight: 600;
 }
 .draggable-area {
   flex: 1;
   min-height: 100px;
   overflow-y: auto; /* Enable scrolling */
   padding-right: 5px; /* Space for scrollbar */
+  padding-top: 10px; /* Ensure top margin for the first card */
 }
 
 /* Custom Scrollbar for draggable area */
@@ -994,16 +1007,29 @@ onMounted(() => {
 
 .kanban-card {
   background-color: var(--el-bg-color);
-  border-radius: 4px;
-  padding: 10px;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  transition: box-shadow 0.2s, background-color 0.3s;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
+
+html.dark .kanban-card {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 .kanban-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
 }
+
+html.dark .kanban-card:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
 .card-title {
   font-weight: 500;
   margin-bottom: 8px;

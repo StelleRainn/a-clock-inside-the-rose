@@ -68,7 +68,7 @@
     </el-dialog>
 
     <!-- Focus Heatmap Section -->
-    <el-card class="mb-20">
+    <el-card class="glass-card mb-20">
       <template #header>
         <span>{{ $t('stats.focusHeatmap') }}</span>
       </template>
@@ -76,7 +76,7 @@
     </el-card>
 
     <!-- Focus Time (Bar) -->
-    <el-card class="mb-20">
+    <el-card class="glass-card mb-20">
       <template #header>
         <div class="card-header">
           <span>{{ $t('stats.focusTime') }}</span>
@@ -103,7 +103,7 @@
     </el-card>
 
     <!-- Achievement Section -->
-    <el-card class="mb-20">
+    <el-card class="glass-card mb-20">
       <template #header>
         <span>{{ $t('stats.achievements') }}</span>
       </template>
@@ -132,7 +132,7 @@
 
     <el-row :gutter="20">
       <el-col :xs="24" :sm="24" :md="12" :lg="12" class="mb-20">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>{{ $t('stats.focusDistributionByTag') }}</span>
           </template>
@@ -140,7 +140,7 @@
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="24" :md="12" :lg="12">
-        <el-card>
+        <el-card class="glass-card">
           <template #header>
             <span>{{ $t('stats.taskStatusDistribution') }}</span>
           </template>
