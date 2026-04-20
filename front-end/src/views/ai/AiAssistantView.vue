@@ -1,16 +1,26 @@
 <template>
   <div class="ai-view">
-    <!-- Sidebar for Chat History -->
+    <!-- 
+    AiAssistantView: 智能体对话视图。
+    采用了类似 ChatGPT 的经典双栏布局 (侧边栏会话列表 + 主内容区聊天界面)。
+    这里使用了 `fixed` 定位来脱离 MainLayout 的常规流，从而实现全屏沉浸式的聊天体验。
+  -->
+    <!-- 
+      左侧栏 (Sidebar): 历史会话列表 
+      在移动端，通过 `isSidebarOpen` 状态配合 CSS 的 `transform: translateX` 实现抽屉式滑入滑出。
+    -->
     <div class="chat-sidebar" :class="{ 'sidebar-open': isSidebarOpen }">
       <div class="sidebar-header">
         <el-button type="primary" class="new-chat-btn" @click="handleNewChat">
           <el-icon><Plus /></el-icon> {{ $t('ai.newChat') }}
         </el-button>
+        <!-- 移动端专属的关闭抽屉按钮 -->
         <el-button class="mobile-close-btn" circle @click="isSidebarOpen = false">
           <el-icon><Close /></el-icon>
         </el-button>
       </div>
       
+      <!-- 会话列表展示区 -->
       <div class="sessions-list" v-loading="isSessionsLoading">
         <div v-if="sessions.length === 0 && !isSessionsLoading" class="no-sessions">
           {{ $t('ai.noPreviousChats') }}
@@ -23,7 +33,10 @@
           @click="selectSession(session.id)"
         >
           <el-icon><ChatDotSquare /></el-icon>
+          <!-- session.title 是在 AI 回复第一句话时截取生成的，见 stores/ai.js -->
           <span class="session-title">{{ session.title }}</span>
+          
+          <!-- 删除会话按钮：使用了 @click.stop 阻止事件冒泡，防止误触发选中会话 -->
           <el-button 
             type="danger" 
             link 
@@ -36,8 +49,9 @@
       </div>
     </div>
 
-    <!-- Main Chat Area -->
+    <!-- 右侧主聊天区 (Main Chat Area) -->
     <div class="chat-main">
+      <!-- 移动端专属的汉堡菜单按钮，用于呼出侧边栏 -->
       <div class="mobile-header">
         <el-button circle @click="isSidebarOpen = true">
           <el-icon><Menu /></el-icon>
@@ -45,94 +59,113 @@
         <span class="mobile-title">{{ $t('ai.intelligent') }}</span>
       </div>
 
-      <!-- Chat Container -->
+      <!-- 聊天消息滚动容器 -->
       <div class="chat-container" ref="chatContainerRef">
-      <div v-if="messages.length === 0" class="empty-state">
-        <el-icon :size="64" class="ai-icon"><Cpu /></el-icon>
-        <h2>{{ $t('ai.intelligent') }}</h2>
-        <p>{{ $t('ai.intro') }}</p>
-        <div class="suggestions">
-          <el-tag 
-            v-for="s in suggestions" 
-            :key="s" 
-            effect="plain" 
-            class="suggestion-tag"
-            @click="sendMessage($t(`ai.${s.key}`))"
-          >
-            {{ $t(`ai.${s.key}`) }}
-          </el-tag>
+        <!-- 空状态：当是一个全新会话时，展示打招呼信息和快捷指令卡片 -->
+        <div v-if="messages.length === 0" class="empty-state">
+          <el-icon :size="64" class="ai-icon"><Cpu /></el-icon>
+          <h2>{{ $t('ai.intelligent') }}</h2>
+          <p>{{ $t('ai.intro') }}</p>
+          <div class="suggestions">
+            <el-tag 
+              v-for="s in suggestions" 
+              :key="s.key" 
+              effect="plain" 
+              class="suggestion-tag"
+              @click="sendMessage($t(`ai.${s.key}`))"
+            >
+              {{ $t(`ai.${s.key}`) }}
+            </el-tag>
+          </div>
         </div>
-      </div>
 
-      <div v-else class="messages-list">
-        <div 
-          v-for="(msg, index) in messages" 
-          :key="index" 
-          class="message-wrapper"
-          :class="{ 'is-user': msg.role === 'user' }"
-        >
-          <div class="avatar">
-            <el-avatar v-if="msg.role === 'user'" :size="36" :src="userAvatar" icon="UserFilled" />
-            <div v-else class="ai-avatar">
-              <el-icon><Cpu /></el-icon>
+        <!-- 消息列表渲染区 -->
+        <div v-else class="messages-list">
+          <!-- 
+            消息气泡包装器：通过判断 msg.role，动态应用 `is-user` 类名。
+            `is-user` 会将 flex 方向设置为 row-reverse，从而让用户头像和消息靠右显示。
+          -->
+          <div 
+            v-for="(msg, index) in messages" 
+            :key="index" 
+            class="message-wrapper"
+            :class="{ 'is-user': msg.role === 'user' }"
+          >
+            <div class="avatar">
+              <!-- 用户的真实头像 or AI 的固定图标 -->
+              <el-avatar v-if="msg.role === 'user'" :size="36" :src="userAvatar" icon="UserFilled" />
+              <div v-else class="ai-avatar">
+                <el-icon><Cpu /></el-icon>
+              </div>
+            </div>
+            
+            <div class="message-content">
+              <!-- 
+                气泡实体：
+                如果 role === 'model' (AI 返回)，则使用 markdown-it 渲染为 HTML；
+                如果是用户输入，则作为普通文本渲染，防止 XSS 注入。
+              -->
+              <div class="bubble" :class="{ 'user-bubble': msg.role === 'user', 'ai-bubble': msg.role === 'model', 'error-bubble': msg.isError }">
+                <div v-if="msg.role === 'model'" v-html="renderMarkdown(msg.content)" class="markdown-body"></div>
+                <div v-else>{{ msg.content }}</div>
+              </div>
+              <div class="timestamp">
+                {{ formatTime(msg.timestamp) }}
+              </div>
             </div>
           </div>
           
-          <div class="message-content">
-            <div class="bubble" :class="{ 'user-bubble': msg.role === 'user', 'ai-bubble': msg.role === 'model', 'error-bubble': msg.isError }">
-              <!-- Render Markdown for AI, Plain text for User -->
-              <div v-if="msg.role === 'model'" v-html="renderMarkdown(msg.content)" class="markdown-body"></div>
-              <div v-else>{{ msg.content }}</div>
+          <!-- 
+            打字机 Loading 占位符：
+            在发送请求但大模型尚未返回完整数据时，显示三个跳动的小圆点，增强等待体验。
+          -->
+          <div v-if="isLoading" class="message-wrapper">
+            <div class="avatar">
+              <div class="ai-avatar"><el-icon><Cpu /></el-icon></div>
             </div>
-            <div class="timestamp">
-              {{ formatTime(msg.timestamp) }}
-            </div>
-          </div>
-        </div>
-        
-        <!-- Loading Indicator -->
-        <div v-if="isLoading" class="message-wrapper">
-           <div class="avatar">
-            <div class="ai-avatar"><el-icon><Cpu /></el-icon></div>
-          </div>
-          <div class="message-content">
-            <div class="bubble ai-bubble typing-indicator">
-              <span></span><span></span><span></span>
+            <div class="message-content">
+              <div class="bubble ai-bubble typing-indicator">
+                <span></span><span></span><span></span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Input Area -->
-    <div class="input-area">
-      <div class="input-wrapper">
-        <el-input
-          v-model="inputMessage"
-          type="textarea"
-          :autosize="{ minRows: 1, maxRows: 4 }"
-          :placeholder="$t('ai.inputPlaceholder')"
-          resize="none"
-          @keydown.enter.prevent="handleEnter"
-          :disabled="isLoading"
-        >
-          <template #prefix>
-            <el-icon class="input-icon"><ChatDotRound /></el-icon>
-          </template>
-        </el-input>
-        <el-button 
-          type="primary" 
-          circle 
-          :icon="Position" 
-          :disabled="!inputMessage.trim() || isLoading"
-          @click="handleSend"
-          class="send-btn"
-        />
+      <!-- 
+        底部输入区 (Input Area) 
+        使用了绝对/固定定位在底部，并通过背景渐变(linear-gradient)实现了文字滚入输入框后方的“消失感”。
+      -->
+      <div class="input-area">
+        <div class="input-wrapper">
+          <!-- 支持自动长高 (autosize) 的文本域 -->
+          <el-input
+            v-model="inputMessage"
+            type="textarea"
+            :autosize="{ minRows: 1, maxRows: 4 }"
+            :placeholder="$t('ai.inputPlaceholder')"
+            resize="none"
+            @keydown.enter.prevent="handleEnter"
+            :disabled="isLoading"
+          >
+            <template #prefix>
+              <el-icon class="input-icon"><ChatDotRound /></el-icon>
+            </template>
+          </el-input>
+          <!-- 发送按钮：无输入内容或 AI 正在思考时禁用 -->
+          <el-button 
+            type="primary" 
+            circle 
+            :icon="Position" 
+            :disabled="!inputMessage.trim() || isLoading"
+            @click="handleSend"
+            class="send-btn"
+          />
+        </div>
+        <div class="disclaimer">
+          {{ $t('ai.disclaimer') }}
+        </div>
       </div>
-      <div class="disclaimer">
-        {{ $t('ai.disclaimer') }}
-      </div>
-    </div>
     </div>
   </div>
 </template>
@@ -146,21 +179,23 @@ import { useI18n } from 'vue-i18n'
 import MarkdownIt from 'markdown-it'
 import { ElMessageBox, ElMessage } from 'element-plus'
 
-// Initialize
+// 初始化
 const { t } = useI18n()
 const aiStore = useAiStore()
 const userStore = useUserStore()
+
+// 实例化 Markdown-it，配置 linkify 让文本中的 URL 自动转为超链接
 const md = new MarkdownIt({
-  html: false,
+  html: false, // 禁用 HTML 标签渲染，防止 XSS
   linkify: true,
-  breaks: true
+  breaks: true // 将 \n 转换为 <br>
 })
 
 const chatContainerRef = ref(null)
 const inputMessage = ref('')
 const isSidebarOpen = ref(false)
 
-// Computed
+// 派生状态映射 (与 Pinia Store 联动)
 const messages = computed(() => aiStore.messages)
 const sessions = computed(() => aiStore.sessions)
 const currentSessionId = computed(() => aiStore.currentSessionId)
@@ -168,6 +203,7 @@ const isSessionsLoading = computed(() => aiStore.isSessionsLoading)
 const isLoading = computed(() => aiStore.isLoading)
 const userAvatar = computed(() => userStore.user?.avatarUrl || '')
 
+// 预设的快捷指令，在 i18n 语言包中定义
 const suggestions = [
   { key: 'suggAnalyze' },
   { key: 'suggPrioritize' },
@@ -175,7 +211,9 @@ const suggestions = [
   { key: 'suggSummarize' }
 ]
 
-// Methods
+// ==========================================
+// 辅助与工具函数
+// ==========================================
 const renderMarkdown = (text) => {
   return md.render(text || '')
 }
@@ -185,8 +223,26 @@ const formatTime = (date) => {
   return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+// 自动滚动到底部机制
+// 必须包裹在 nextTick 中，确保 Vue 已经完成了最新的 DOM 渲染后再获取 scrollHeight
+const scrollToBottom = () => {
+  nextTick(() => {
+    if (chatContainerRef.value) {
+      chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight
+    }
+  })
+}
+
+// 监听消息数组的长度变化，只要有新消息进来，立刻触发滚动到底部
+watch(() => aiStore.messages.length, scrollToBottom)
+
+
+// ==========================================
+// 核心交互逻辑
+// ==========================================
 const handleNewChat = () => {
   aiStore.startNewSession()
+  // 移动端体验优化：新建对话后自动收起侧边栏抽屉
   if (window.innerWidth <= 768) {
     isSidebarOpen.value = false
   }
@@ -210,34 +266,28 @@ const deleteSession = (id) => {
   }).catch(() => {})
 }
 
-const scrollToBottom = () => {
-  nextTick(() => {
-    if (chatContainerRef.value) {
-      chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight
-    }
-  })
+// 拦截文本域的回车事件
+const handleEnter = (e) => {
+  // 如果按下了 Shift，放行原生的换行行为；如果只有 Enter，则拦截并执行发送
+  if (e.shiftKey) return 
+  handleSend()
 }
 
+// 发送消息的主入口
 const handleSend = async () => {
   const text = inputMessage.value
   if (!text.trim()) return
   
-  inputMessage.value = ''
+  inputMessage.value = '' // 先清空输入框，提供即时的交互反馈
+  // 调用 store 发起网络请求并流式渲染
   await aiStore.sendMessage(text)
 }
 
+// 用于快捷指令点击
 const sendMessage = (text) => {
   inputMessage.value = text
   handleSend()
 }
-
-const handleEnter = (e) => {
-  if (e.shiftKey) return // Allow new line
-  handleSend()
-}
-
-// Watchers
-watch(() => aiStore.messages.length, scrollToBottom)
 
 onMounted(() => {
   aiStore.loadSessions()

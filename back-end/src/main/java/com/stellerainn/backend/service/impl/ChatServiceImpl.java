@@ -9,6 +9,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 聊天服务实现类 (ChatServiceImpl)
+ * 这里处理 AI 助手的会话和消息落库逻辑。
+ * 面向接口编程，实现了 ChatService 接口，符合 Spring 的最佳实践。
+ */
 @Service
 public class ChatServiceImpl implements ChatService {
 
@@ -20,6 +25,7 @@ public class ChatServiceImpl implements ChatService {
         ChatSession session = new ChatSession();
         session.setUserId(userId);
         session.setTitle(title);
+        // Mybatis insert 之后，如果配置了 useGeneratedKeys，主键会自动填充到 session 实体中
         chatMapper.insertSession(session);
         return session;
     }
@@ -44,11 +50,15 @@ public class ChatServiceImpl implements ChatService {
         chatMapper.deleteSession(id);
     }
 
+    /**
+     * 保存单条聊天记录
+     * 这不仅记录了用户的 Prompt，也记录了 AI 的 Response。
+     */
     @Override
     public ChatMessage saveMessage(Long sessionId, String role, String content) {
         ChatMessage message = new ChatMessage();
         message.setSessionId(sessionId);
-        message.setRole(role);
+        message.setRole(role); // "user" or "model"
         message.setContent(content);
         chatMapper.insertMessage(message);
         

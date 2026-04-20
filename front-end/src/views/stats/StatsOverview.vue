@@ -1,13 +1,22 @@
 <template>
   <div class="stats-container">
-    <!-- Social Share Section -->
+    <!-- 
+    StatsOverview: 数据统计与成就展示中心。
+    整合了 ECharts 图表（热力图、柱状图、饼图）和 HTML2Canvas（生成分享卡片）。
+  -->
+    <!-- 顶部动作区：生成并分享个人专属专注卡片 -->
     <div class="share-section mb-20">
       <el-button type="primary" :icon="Share" @click="generateShareCard" :loading="generatingCard">
         {{ $t('stats.shareMyProgress') }}
       </el-button>
     </div>
 
-    <!-- Hidden Share Card Template -->
+    <!-- 
+      0. 卡片分享
+      隐藏的分享卡片模板 (Hidden Share Card Template)
+      技巧：使用绝对定位将其移出可视区域 (-9999px)，但在 DOM 中依然存在，
+      以便 html2canvas 能够读取它的完整结构并截图。
+    -->
     <div class="share-card-container" ref="shareCardRef">
       <div class="share-card">
         <div class="card-header">
@@ -26,6 +35,7 @@
           </div>
         </div>
 
+        <!-- 核心统计数据网格 -->
         <div class="stats-grid">
           <div class="stat-box">
             <span class="value">{{ totalFocusMinutes }}</span>
@@ -54,7 +64,7 @@
       </div>
     </div>
 
-    <!-- Image Preview Dialog -->
+    <!-- 图片预览弹窗：展示 html2canvas 生成的 Base64 图片，供用户长按/右键保存 -->
     <el-dialog v-model="shareDialogVisible" :title="$t('stats.yourFocusCard')" width="400px">
       <div class="image-preview">
         <img :src="shareImageUrl" alt="Focus Card" style="width: 100%; border-radius: 8px;" />
@@ -67,7 +77,7 @@
       </template>
     </el-dialog>
 
-    <!-- Focus Heatmap Section -->
+    <!-- 1. 专注日历热力图 (GitHub Contribution Style) -->
     <el-card class="glass-card mb-20">
       <template #header>
         <span>{{ $t('stats.focusHeatmap') }}</span>
@@ -75,12 +85,13 @@
       <div ref="heatmapChartRef" style="height: 200px;"></div>
     </el-card>
 
-    <!-- Focus Time (Bar) -->
+    <!-- 2. 专注时间趋势图 (Bar Chart) -->
     <el-card class="glass-card mb-20">
       <template #header>
         <div class="card-header">
           <span>{{ $t('stats.focusTime') }}</span>
           <div class="header-actions">
+            <!-- 时间翻页器：支持按周、按月、按年前后翻阅数据 -->
             <el-button-group class="mr-3" size="small">
               <el-button @click="handlePrevFocusTime">
                 <el-icon><ArrowLeft /></el-icon>
@@ -91,6 +102,7 @@
                 <el-icon><ArrowRight /></el-icon>
               </el-button>
             </el-button-group>
+            <!-- 时间粒度切换器 -->
             <el-radio-group v-model="focusTimeRange" size="small" @change="onFocusTimeRangeChange">
               <el-radio-button label="7days">{{ $t('stats.days7') }}</el-radio-button>
               <el-radio-button label="30days">{{ $t('stats.days30') }}</el-radio-button>
@@ -102,7 +114,7 @@
       <div ref="focusChartRef" style="height: 300px;"></div>
     </el-card>
 
-    <!-- Achievement Section -->
+    <!-- 3. 游戏化成就系统 (Achievements) -->
     <el-card class="glass-card mb-20">
       <template #header>
         <span>{{ $t('stats.achievements') }}</span>
@@ -122,6 +134,7 @@
           <div class="achievement-info">
             <h4>{{ achievement.name }}</h4>
             <p>{{ achievement.description }}</p>
+            <!-- 仅在解锁状态下显示解锁时间 -->
             <span class="unlock-date" v-if="achievement.unlocked">
               {{ $t('stats.unlockedAt', { date: formatDate(achievement.unlockedAt) }) }}
             </span>
@@ -130,6 +143,7 @@
       </div>
     </el-card>
 
+    <!-- 4. 多维度分布饼图 (Tags & Status) -->
     <el-row :gutter="20">
       <el-col :xs="24" :sm="24" :md="12" :lg="12" class="mb-20">
         <el-card class="glass-card">
@@ -165,19 +179,26 @@ import { Medal, Trophy, Calendar, Finished, Share, Timer, ArrowLeft, ArrowRight 
 const { t } = useI18n()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
+
+// ==========================================
+// 1. ECharts 实例与 DOM 引用
+// ==========================================
 const focusChartRef = ref(null)
 const taskChartRef = ref(null)
 const heatmapChartRef = ref(null)
 const tagChartRef = ref(null)
+
 let focusChart = null
 let taskChart = null
 let heatmapChart = null
 let tagChart = null
 
+// 趋势图交互状态
 const focusTimeRange = ref('7days')
-const focusTimeOffset = ref(0)
-const allDailyData = ref([])
+const focusTimeOffset = ref(0) // 时间偏移量：0 代表当前，1 代表上一个周期
+const allDailyData = ref([]) // 缓存的全量每日数据，避免频繁请求后端
 
+// 按钮响应时间粒度
 const prevButtonText = computed(() => {
   if (focusTimeRange.value === '7days') return t('stats.previous7Days')
   if (focusTimeRange.value === '30days') return t('stats.previous30Days')
@@ -190,11 +211,14 @@ const nextButtonText = computed(() => {
   return t('stats.next1Year')
 })
 
+// 成就与用户核心数据
 const achievements = ref([])
 const achievementsLoading = ref(false)
 const userStats = ref({})
 
-// Share Card Refs
+// ==========================================
+// 2. Html2Canvas 分享卡片生成逻辑
+// ==========================================
 const shareCardRef = ref(null)
 const shareDialogVisible = ref(false)
 const shareImageUrl = ref('')
@@ -203,12 +227,11 @@ const generatingCard = ref(false)
 const userLevel = computed(() => userStats.value.level || 1)
 const totalFocusMinutes = computed(() => userStats.value.totalFocusMinutes || 0)
 const streakDays = computed(() => userStats.value.streakDays || 0)
-const completedTasks = ref(0) // Need to fetch this separately or estimate
+const completedTasks = ref(0)
 const latestAchievement = computed(() => {
   return achievements.value.filter(a => a.unlocked).sort((a, b) => new Date(b.unlockedAt) - new Date(a.unlockedAt))[0]
 })
 
-// Icon mapping
 const getIcon = (name) => {
   const map = {
     'medal': Medal,
@@ -224,6 +247,7 @@ const formatDate = (dateStr) => {
   return new Date(dateStr).toLocaleDateString()
 }
 
+// 聚合请求：并行拉取用户成就、等级与任务统计
 const fetchAllData = async () => {
   if (!userStore.user || !userStore.user.id) return
   
@@ -238,7 +262,6 @@ const fetchAllData = async () => {
     achievements.value = achievementsData || []
     userStats.value = statsData || {}
     
-    // Calculate completed tasks from stats
     const doneTaskStat = taskStats.find(s => s.status === 'DONE')
     completedTasks.value = doneTaskStat ? doneTaskStat.count : 0
     
@@ -249,6 +272,7 @@ const fetchAllData = async () => {
   }
 }
 
+// 调用 html2canvas 对隐藏的 DOM 节点进行高分辨率截图
 const generateShareCard = async () => {
   if (!shareCardRef.value) return
   generatingCard.value = true
@@ -256,7 +280,7 @@ const generateShareCard = async () => {
   try {
     const element = shareCardRef.value.querySelector('.share-card')
     const canvas = await html2canvas(element, {
-      scale: 2, // High resolution
+      scale: 2, // 提升清晰度，防止在 Retina 屏幕下模糊
       backgroundColor: null,
       logging: false
     })
@@ -270,14 +294,15 @@ const generateShareCard = async () => {
   }
 }
 
+// ==========================================
+// 3. ECharts 动态主题适配系统 (Dark Mode)
+// ==========================================
 const updateChartsTheme = () => {
   const isDark = themeStore.isDark
   const textColor = isDark ? '#ccc' : '#333'
   const borderColor = isDark ? '#1a1a1a' : '#fff'
 
-  // Update Heatmap
   if (heatmapChart) {
-    // Colors
     const lightColorsDeep = ['#ebedf0', '#40c463', '#30a14e', '#216e39', '#0e4429']
     const finalDarkColors = ['#2d2d2d', '#238636', '#2ea043', '#3fb950', '#a2d9a7']
     const colors = isDark ? finalDarkColors : lightColorsDeep
@@ -301,7 +326,6 @@ const updateChartsTheme = () => {
     })
   }
 
-  // Update Task Chart
   if (taskChart) {
     taskChart.setOption({
       legend: { textStyle: { color: textColor } },
@@ -309,15 +333,12 @@ const updateChartsTheme = () => {
     })
   }
 
-  // Update Tag Chart
   if (tagChart) {
     tagChart.setOption({
-      legend: { textStyle: { color: textColor } },
-      // Tag Chart doesn't have borders usually, but we can check
+      legend: { textStyle: { color: textColor } }
     })
   }
   
-  // Update Focus Chart (Bar)
   if (focusChart) {
       focusChart.setOption({
           xAxis: {
@@ -333,47 +354,63 @@ const updateChartsTheme = () => {
   }
 }
 
-// Watch theme changes
+// 监听 Pinia 中的全局暗黑模式状态，一旦改变，即刻重新应用 ECharts 的颜色配置
 watch(() => themeStore.isDark, () => {
   updateChartsTheme()
 })
 
+// ==========================================
+// 4. 趋势图数据处理与渲染逻辑
+// 这部分代码是前端数据可视化的核心，它负责将后端返回的“全量按天统计的平铺数据”
+// 动态计算、聚合、降维成 ECharts 柱状图所需的 X 轴 (dates) 和 Y 轴 (durations) 数据。
+// ==========================================
 const handlePrevFocusTime = () => {
-  focusTimeOffset.value++
+  focusTimeOffset.value++ // 向历史追溯一个周期（比如前一个7天）
   updateFocusChart()
 }
 
 const handleNextFocusTime = () => {
   if (focusTimeOffset.value > 0) {
-    focusTimeOffset.value--
+    focusTimeOffset.value-- // 向未来推进一个周期，直到 offset 为 0 (当前周期)
     updateFocusChart()
   }
 }
 
 const onFocusTimeRangeChange = () => {
-  focusTimeOffset.value = 0
+  focusTimeOffset.value = 0 // 切换时间粒度（7天/30天/1年）时，必须将偏移量重置归零
   updateFocusChart()
 }
 
+// 核心计算函数：基于 offset (偏移) 和 range (粒度) 计算时间轴，并在缓存数据中进行匹配聚合
 const updateFocusChart = () => {
   if (!focusChart) return
   
   const range = focusTimeRange.value
   const offset = focusTimeOffset.value
-  let dates = []
-  let durations = []
+  let dates = [] // ECharts X 轴数据容器
+  let durations = [] // ECharts Y 轴数据容器
   
+  // 第一步：确定计算的“时间基准点 (endDate)”
+  // 默认是今天。如果是按天计算，需要将时分秒归零，确保日期的纯净性。
   const endDate = new Date()
   endDate.setHours(0, 0, 0, 0)
 
+  // 第二步：根据偏移量 (offset) 倒推结束日期
+  // 比如：今天是 5月10日，range 是 7days，offset 是 1（前一个周期）。
+  // 那么 endDate 就应该被推回到 5月3日。
   if (range === '7days') {
      endDate.setDate(endDate.getDate() - (offset * 7))
   } else if (range === '30days') {
      endDate.setDate(endDate.getDate() - (offset * 30))
   } else if (range === '1year') {
+     // 对于年份聚合，直接操作 Date 的 Month 属性
      endDate.setMonth(endDate.getMonth() - (offset * 12))
   }
   
+  // 第三步：建立高速缓存映射 (Map)
+  // 将后端返回的数组 [{date: '2024-05-01', totalSeconds: 3600}]
+  // 转化为 Map('2024-05-01' => 60分钟)
+  // 这样做是为了在后续生成 X 轴时，将查找复杂度从 O(N^2) 降为 O(N)
   const dateMap = new Map()
   if (allDailyData.value && allDailyData.value.length > 0) {
     allDailyData.value.forEach(item => {
@@ -381,65 +418,79 @@ const updateFocusChart = () => {
     })
   }
 
+  // 第四步：构造 X 轴数据并填充 Y 轴（区分天级别和月级别）
   if (range === '7days' || range === '30days') {
     const days = range === '7days' ? 7 : 30
+    
+    // 逆序循环：从 (endDate - 6天) 一直递推到 endDate
+    // 保证 X 轴的时间是从左到右递增的（过去 -> 现在）
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(endDate)
       d.setDate(endDate.getDate() - i)
       
+      // 手动拼接 YYYY-MM-DD，用于去 Map 里做精确匹配
       const year = d.getFullYear()
       const month = String(d.getMonth() + 1).padStart(2, '0')
       const day = String(d.getDate()).padStart(2, '0')
       const dateStr = `${year}-${month}-${day}`
       
-      // We can format x-axis label nicer (e.g. 'MM-DD')
+      // X 轴的显示文案可以精简一点，省去不必要的年份
       dates.push(`${month}-${day}`)
+      // 如果 Map 里没有这一天的数据，说明那天没专注，必须补 0（不能跳过，否则 X 轴会断层）
       durations.push(dateMap.get(dateStr) || 0)
     }
   } else if (range === '1year') {
+    // 年级别的聚合相对复杂，因为后端返回的是“每天”的数据
+    // 我们需要在前端做一次按“月”的二次聚合 (GROUP BY Month)
     const monthMap = new Map()
     if (allDailyData.value && allDailyData.value.length > 0) {
       allDailyData.value.forEach(item => {
-        const monthStr = item.date.substring(0, 7) // 'YYYY-MM'
+        const monthStr = item.date.substring(0, 7) // 巧妙利用字符串截取 'YYYY-MM-DD' -> 'YYYY-MM'
         monthMap.set(monthStr, (monthMap.get(monthStr) || 0) + Math.round(item.totalSeconds / 60))
       })
     }
     
+    // 生成过去 12 个月的 X 轴
     for (let i = 11; i >= 0; i--) {
+      // 获取当月的第一天作为基准日期
       const d = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1)
-      // Safely get YYYY-MM based on local time
+      
       const year = d.getFullYear()
       const month = String(d.getMonth() + 1).padStart(2, '0')
-      const monthStr = `${year}-${month}`
+      const monthStr = `${year}-${month}` // 匹配我们上面生成的 'YYYY-MM' Key
       
+      // 使用浏览器的原生多语言 API 生成带本地化特性的月份名（如 "May 2024" 或 "2024年5月"）
       const monthLabel = d.toLocaleDateString(undefined, { year: 'numeric', month: 'short' })
       dates.push(monthLabel)
+      // 找不到就补 0
       durations.push(monthMap.get(monthStr) || 0)
     }
   }
   
-    focusChart.setOption({
-      xAxis: {
-        type: 'category',
-        data: dates,
-        axisTick: { alignWithLabel: true }
-      },
-      series: [
-        {
-          name: t('stats.focusTimeLabel'),
-          type: 'bar',
-          barWidth: '60%',
-          data: durations,
-          itemStyle: { color: '#409eff' }
-        }
-      ]
-    })
+  // 第五步：将计算好的最终数据注入 ECharts 实例
+  focusChart.setOption({
+    xAxis: {
+      type: 'category',
+      data: dates,
+      axisTick: { alignWithLabel: true }
+    },
+    series: [
+      {
+        name: t('stats.focusTimeLabel'),
+        type: 'bar',
+        barWidth: '60%',
+        data: durations,
+        itemStyle: { color: '#409eff' } // 品牌蓝
+      }
+    ]
+  })
 }
 
+// 初始化所有的 ECharts 实例并拉取数据
 const initCharts = async () => {
   if (!userStore.user || !userStore.user.id) return
 
-  // 1. Fetch & Render Focus Chart
+  // 1. 初始化柱状图 (Focus Chart)
   if (focusChartRef.value) {
     focusChart = echarts.init(focusChartRef.value)
     focusChart.showLoading()
@@ -450,43 +501,25 @@ const initCharts = async () => {
       
       focusChart.hideLoading()
       focusChart.setOption({
-        tooltip: {
-          trigger: 'axis',
-          axisPointer: { type: 'shadow' }
-        },
-        legend: {
-          bottom: '0%', // explicitly position legend at the very bottom
-          data: [t('stats.focusTimeLabel')]
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '15%', // Increased bottom margin to prevent overlap with legend
-          containLabel: true
-        },
-        xAxis: {
-          type: 'category',
-          axisTick: { alignWithLabel: true }
-        },
-        yAxis: {
-          type: 'value',
-          name: 'Minutes'
-        }
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { bottom: '0%', data: [t('stats.focusTimeLabel')] },
+        grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+        xAxis: { type: 'category', axisTick: { alignWithLabel: true } },
+        yAxis: { type: 'value', name: 'Minutes' }
       })
       
       updateFocusChart()
 
-      // 3. Render Heatmap (Using same daily data)
+      // 2. 初始化日历热力图 (Heatmap)
+      // 复用 dailyData，避免重复发请求
       if (heatmapChartRef.value) {
         heatmapChart = echarts.init(heatmapChartRef.value)
         const currentYear = new Date().getFullYear()
         
-        // Generate full year date range to ensure all days are interactive
         const startDate = new Date(currentYear, 0, 1)
         const endDate = new Date(currentYear, 11, 31)
         const dateMap = new Map()
         
-        // Fill map with actual data
         dailyData.forEach(item => {
           dateMap.set(item.date, Math.round(item.totalSeconds / 60))
         })
@@ -502,25 +535,20 @@ const initCharts = async () => {
           tooltip: {
             position: 'top',
             formatter: (params) => {
-              if (params.value[1] === 0) {
-                 return t('stats.noFocusRecords', { date: params.value[0] })
-              }
+              if (params.value[1] === 0) return t('stats.noFocusRecords', { date: params.value[0] })
               return t('stats.minsFocus', { date: params.value[0], mins: params.value[1] })
             }
           },
           visualMap: {
             min: 0,
-            max: 120, // Max 2 hours for deep color
+            max: 120, // 达到 2 小时即为最深色
             calculable: false,
             orient: 'horizontal',
             left: 'center',
-            bottom: '0%',
-            // Initial colors will be set by updateChartsTheme
+            bottom: '0%'
           },
           calendar: {
-            top: 30,
-            left: 30,
-            right: 30,
+            top: 30, left: 30, right: 30,
             cellSize: ['auto', 13],
             range: currentYear,
             yearLabel: { show: false }
@@ -531,18 +559,15 @@ const initCharts = async () => {
             data: heatmapData
           }
         })
-        
-        // Apply theme styles immediately
-        updateChartsTheme()
+        updateChartsTheme() // 首次挂载即注入主题色
       }
-
     } catch (e) {
       console.error(e)
       focusChart.hideLoading()
     }
   }
 
-  // 2. Fetch & Render Task Chart
+  // 3. 初始化任务状态饼图 (Task Chart)
   if (taskChartRef.value) {
     taskChart = echarts.init(taskChartRef.value)
     taskChart.showLoading()
@@ -558,14 +583,9 @@ const initCharts = async () => {
       const isDark = themeStore.isDark
       
       taskChart.setOption({
-        tooltip: {
-          trigger: 'item'
-        },
+        tooltip: { trigger: 'item' },
         legend: {
-          type: 'scroll',
-          orient: 'vertical',
-          left: '5%',
-          top: 'middle',
+          type: 'scroll', orient: 'vertical', left: '5%', top: 'middle',
           textStyle: { color: isDark ? '#ccc' : '#333' }
         },
         series: [
@@ -580,16 +600,9 @@ const initCharts = async () => {
               borderColor: isDark ? '#1a1a1a' : '#fff',
               borderWidth: 2
             },
-            label: {
-              show: false,
-              position: 'center'
-            },
+            label: { show: false, position: 'center' },
             emphasis: {
-              label: {
-                show: true,
-                fontSize: 20,
-                fontWeight: 'bold'
-              }
+              label: { show: true, fontSize: 20, fontWeight: 'bold' }
             },
             labelLine: { show: false },
             data: pieData
@@ -602,7 +615,7 @@ const initCharts = async () => {
     }
   }
 
-  // 4. Fetch & Render Tag Chart
+  // 4. 初始化标签专注分布玫瑰图 (Tag Chart)
   if (tagChartRef.value) {
     tagChart = echarts.init(tagChartRef.value)
     tagChart.showLoading()
@@ -611,8 +624,8 @@ const initCharts = async () => {
       const tagData = await getTagFocusStats(userStore.user.id)
       const pieData = tagData.map(item => ({
         name: item.tagName,
-        value: Math.round(item.totalSeconds / 60), // Convert to minutes
-        itemStyle: { color: item.tagColor }
+        value: Math.round(item.totalSeconds / 60),
+        itemStyle: { color: item.tagColor } // 直接使用后端返回的标签专属颜色
       }))
 
       tagChart.hideLoading()
@@ -624,10 +637,7 @@ const initCharts = async () => {
           formatter: '{b}: {c} mins ({d}%)'
         },
         legend: {
-          type: 'scroll',
-          orient: 'vertical',
-          left: '5%',
-          top: 'middle',
+          type: 'scroll', orient: 'vertical', left: '5%', top: 'middle',
           textStyle: { color: isDark ? '#ccc' : '#333' }
         },
         series: [
@@ -636,10 +646,8 @@ const initCharts = async () => {
             type: 'pie',
             radius: [20, 90],
             center: ['65%', '50%'],
-            roseType: 'radius',
-            itemStyle: {
-              borderRadius: 5
-            },
+            roseType: 'radius', // 南丁格尔玫瑰图模式
+            itemStyle: { borderRadius: 5 },
             data: pieData
           }
         ]
@@ -651,6 +659,7 @@ const initCharts = async () => {
   }
 }
 
+// 响应式核心：窗口缩放时强制重绘所有 ECharts 实例
 const resizeCharts = () => {
   focusChart?.resize()
   taskChart?.resize()
@@ -666,6 +675,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', resizeCharts)
+  // 必须手动销毁 ECharts 实例以释放内存
   focusChart?.dispose()
   taskChart?.dispose()
   heatmapChart?.dispose()

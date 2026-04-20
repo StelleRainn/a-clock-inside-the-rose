@@ -1,6 +1,0 @@
--- 1. Update Users Table for Profile
-ALTER TABLE users ADD COLUMN avatar_url VARCHAR(255);
-ALTER TABLE users ADD COLUMN nickname VARCHAR(50);
-ALTER TABLE users ADD COLUMN bio VARCHAR(255);
-ALTER TABLE users ADD COLUMN gender ENUM('MALE', 'FEMALE', 'OTHER');
-ALTER TABLE users ADD COLUMN website VARCHAR(255);

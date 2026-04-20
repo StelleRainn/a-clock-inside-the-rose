@@ -7,8 +7,13 @@
     ]"
     :style="heroThemeStyles"
   >
-    <!-- Hero Background -->
+    <!-- 
+    TimerSection: 番茄钟的核心展示区，也就是 Dashboard 顶部的“沉浸式大屏”。
+    动态类名控制了 UI 的隐藏（沉浸模式）以及文字颜色的深浅（响应背景图）。
+  -->
+    <!-- Hero Background (全屏背景层) -->
     <div class="hero-bg" :style="bgStyle">
+      <!-- 遮罩层，透明度由设置中的 bgOverlayOpacity 控制，用于保证文字对比度 -->
       <div 
         class="bg-overlay"
         :style="{ backgroundColor: `rgba(0,0,0,${pomodoroStore.bgOverlayOpacity})` }"
@@ -16,7 +21,9 @@
     </div>
 
     <div class="timer-content">
-      <!-- Mode Toggles -->
+      
+      <!-- Mode Toggles (专注 / 短休 / 长休 切换按钮) -->
+      <!-- 注意：在倒计时运行期间，这些按钮被禁用 (:disabled="pomodoroStore.isRunning") -->
       <div class="mode-toggles">
         <button 
           class="mode-btn" 
@@ -44,12 +51,13 @@
         </button>
       </div>
 
-      <!-- Main Timer -->
+      <!-- Main Timer (核心倒计时数字显示) -->
       <div class="timer-display">
         <h1 class="timer-digits">{{ pomodoroStore.formattedTime }}</h1>
       </div>
 
-      <!-- Current Task -->
+      <!-- Current Task (当前关联的任务下拉框) -->
+      <!-- 将番茄钟时间计入特定任务的数据流转枢纽 -->
       <div class="current-task">
         <el-dropdown 
           trigger="click" 
@@ -64,6 +72,7 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
+              <!-- 渲染从后端获取的待办任务列表 -->
               <el-dropdown-item 
                 v-for="task in pendingTasks" 
                 :key="task.id" 
@@ -71,14 +80,16 @@
               >
                 {{ task.title }}
               </el-dropdown-item>
+              <!-- 提供清除选项，允许进行无关联的纯净专注 -->
               <el-dropdown-item divided command="clear">{{ $t('timer.clearSelection') }}</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
       </div>
 
-      <!-- Controls -->
+      <!-- Controls (控制按钮组：开始/暂停、重置、全屏、设置) -->
       <div class="timer-controls">
+        <!-- 动态切换 Start / Pause，通过 toggleTimer 触发 -->
         <el-button 
           class="control-btn main-action"
           :class="{ active: pomodoroStore.isRunning }"
@@ -87,6 +98,7 @@
           {{ pomodoroStore.isRunning ? $t('timer.pause') : $t('timer.start') }}
         </el-button>
         
+        <!-- 重置按钮，仅在非运行状态可用 -->
         <el-button 
           class="control-btn icon-only"
           circle
@@ -96,6 +108,7 @@
           <el-icon :size="20"><Refresh /></el-icon>
         </el-button>
 
+        <!-- 触发浏览器原生全屏 API，并在全屏时激活专注模式隐藏无用 UI -->
         <el-button 
           class="control-btn icon-only"
           circle
@@ -113,7 +126,8 @@
         </el-button>
       </div>
 
-      <!-- Zen Note -->
+      <!-- Zen Note (禅意笔记/灵感捕捉框) -->
+      <!-- 允许用户在专注过程中不切出页面的情况下，快速记录闪念 -->
       <div class="zen-note" :class="{ 'is-focused': isZenNoteFocused }">
         <input 
           v-model="zenNote" 
@@ -125,13 +139,13 @@
         />
       </div>
 
-      <!-- Scroll Indicator -->
+      <!-- Scroll Indicator (向下滚动的箭头提示，通过向上 emit 事件交由 DashboardView 处理滚动) -->
       <div v-if="!pomodoroStore.isImmersive" class="scroll-indicator" @click="$emit('scroll-down')">
         <el-icon><ArrowDown /></el-icon>
       </div>
     </div>
 
-    <!-- Settings Dialog -->
+    <!-- Settings Dialog (通过 append-to-body 挂载到 body 下的全局设置弹窗) -->
     <el-dialog 
       v-model="showSettings" 
       :title="$t('settings.title')" 
@@ -160,6 +174,7 @@ import { FastAverageColor } from 'fast-average-color'
 const { t } = useI18n()
 const pomodoroStore = usePomodoroStore()
 const userStore = useUserStore()
+// 初始化提取图片主色调的工具库
 const fac = new FastAverageColor()
 
 const isUIHidden = ref(false)
@@ -170,6 +185,9 @@ const showSettings = ref(false)
 const tasks = ref([])
 const analyzedTheme = ref('light') // 'light' means light text (dark bg), 'dark' means dark text (light bg)
 
+// ==========================================
+// 背景图加载与动态样式计算
+// ==========================================
 const bgStyle = computed(() => {
   if (pomodoroStore.backgroundImage) {
     const url = pomodoroStore.backgroundImage === 'custom' 
@@ -181,13 +199,14 @@ const bgStyle = computed(() => {
       opacity: 1
     }
   }
-  // Minimal Black Default
+  // 如果用户选择了 "Minimal Black"，则直接应用纯黑背景
   return { 
     backgroundColor: '#1a1a1a',
     opacity: 1 
   }
 })
 
+// 根据背景图计算应该使用深色文字还是浅色文字
 const currentHeroTheme = computed(() => {
   if (pomodoroStore.backgroundImage) {
     if (pomodoroStore.heroTheme === 'auto') {
@@ -195,7 +214,7 @@ const currentHeroTheme = computed(() => {
     }
     return pomodoroStore.heroTheme
   }
-  // Default Minimal Black always uses Light Text
+  // 纯黑背景必然配浅色文字
   return 'light'
 })
 

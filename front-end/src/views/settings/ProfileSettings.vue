@@ -1,20 +1,33 @@
 <template>
   <div class="settings-container">
+    <!-- 
+    ProfileSettings: 用户个人中心与数据管理页面。
+    包含“个人信息展示/编辑双模式切换”以及“用户数据导出”两大核心功能。
+  -->
     <el-card class="mb-20">
       <template #header>
         <div class="card-header">
+          <!-- 动态标题：根据 isEditing 状态自适应显示 -->
           <span>{{ isEditing ? $t('profile.editProfile') : $t('profile.profile') }}</span>
         </div>
       </template>
       
+      <!-- 
+        1. 纯展示模式 (Display Mode)
+        仅当 isEditing 为 false 时渲染，提供类似名片的视觉体验。
+      -->
       <div v-if="!isEditing" class="profile-display" v-loading="loading">
+        <!-- 头部：头像与简介 -->
         <div class="profile-header-display">
           <el-avatar :size="200" :src="form.avatarUrl" />
+          <!-- 如果没有设置昵称，降级显示用户名 -->
           <h2 class="profile-nickname">{{ form.nickname || form.username }}</h2>
           <p class="profile-bio">{{ form.bio || $t('profile.emptyBio') }}</p>
+          <!-- 点击进入编辑模式 -->
           <el-button type="primary" round @click="isEditing = true" class="edit-btn">{{ $t('profile.editProfile') }}</el-button>
         </div>
         
+        <!-- 详情列表：使用图标+键值对的方式展示详细信息 -->
         <div class="profile-details-list">
           <div class="detail-item">
             <el-icon><User /></el-icon>
@@ -22,6 +35,7 @@
             <span class="detail-value">{{ form.username }}</span>
           </div>
           <div class="detail-item">
+            <!-- 动态图标：根据性别字段显示不同图标 -->
             <el-icon v-if="form.gender === 'MALE'"><Male /></el-icon>
             <el-icon v-else-if="form.gender === 'FEMALE'"><Female /></el-icon>
             <el-icon v-else><User /></el-icon>
@@ -38,6 +52,7 @@
               <span v-else class="text-muted">{{ $t('profile.notProvided') }}</span>
             </span>
           </div>
+          <!-- 敏感信息状态展示：仅显示是否配置，不显示具体 Key -->
           <div class="detail-item">
             <el-icon><Key /></el-icon>
             <span class="detail-label">{{ $t('profile.apiKey') }}:</span>
@@ -49,6 +64,10 @@
         </div>
       </div>
 
+      <!-- 
+        2. 表单编辑模式 (Edit Mode)
+        通过 v-model 绑定 reactive 状态 form，支持全量字段更新。
+      -->
       <el-form v-else :model="form" label-width="120px" v-loading="loading">
         <el-form-item :label="$t('profile.avatarUrl')">
           <el-input v-model="form.avatarUrl" placeholder="https://example.com/avatar.png" />
@@ -58,6 +77,7 @@
         </el-form-item>
 
         <el-form-item :label="$t('profile.username')">
+          <!-- 用户名作为系统唯一标识，禁止修改 -->
           <el-input v-model="form.username" disabled />
           <span class="hint">{{ $t('profile.usernameHint') }}</span>
         </el-form-item>
@@ -82,9 +102,11 @@
           <el-input v-model="form.website" placeholder="https://your-site.com" />
         </el-form-item>
 
+        <!-- 安全区域：密码修改 -->
         <el-divider content-position="left">{{ $t('profile.security') }}</el-divider>
 
         <el-form-item :label="$t('profile.newPassword')">
+          <!-- 只有输入了值才会触发后端的密码修改逻辑 -->
           <el-input 
             v-model="form.password" 
             type="password" 
@@ -94,6 +116,7 @@
           <div class="hint">{{ $t('profile.passwordHint') }}</div>
         </el-form-item>
 
+        <!-- AI 助手配置区 -->
         <el-divider content-position="left">{{ $t('profile.aiConfig') }}</el-divider>
 
         <el-form-item :label="$t('profile.geminiApiKey')">
@@ -106,6 +129,7 @@
           <div class="hint">{{ $t('profile.geminiHint') }}</div>
         </el-form-item>
 
+        <!-- 表单动作 -->
         <el-form-item>
           <el-button type="primary" @click="saveProfile">{{ $t('profile.saveChanges') }}</el-button>
           <el-button @click="isEditing = false">{{ $t('profile.cancel') }}</el-button>
@@ -113,7 +137,10 @@
       </el-form>
     </el-card>
 
-    <!-- Data Export Section -->
+    <!-- 
+      3. 数据导出区 (Data Export Section)
+      为了保护用户数据主权，提供全量任务与番茄钟数据的 CSV 导出功能。
+    -->
     <el-card>
       <template #header>
         <div class="card-header">
@@ -146,11 +173,14 @@ import { List, Timer, User, Male, Female, Link, Key } from '@element-plus/icons-
 
 const { t } = useI18n()
 const userStore = useUserStore()
+
+// UI 控制状态
 const loading = ref(false)
 const exportingTasks = ref(false)
 const exportingPomodoro = ref(false)
-const isEditing = ref(false)
+const isEditing = ref(false) // 核心开关：控制名片展示与表单编辑的切换
 
+// 响应式表单数据容器
 const form = reactive({
   username: '',
   nickname: '',
@@ -162,12 +192,16 @@ const form = reactive({
   geminiApiKey: ''
 })
 
+// ==========================================
+// 数据拉取与保存逻辑
+// ==========================================
 const fetchProfile = async () => {
   if (!userStore.user || !userStore.user.id) return
   loading.value = true
   try {
     const res = await getUserProfile(userStore.user.id)
     if (res) {
+      // 提取后端返回的数据并合并入本地响应式 form 中
       Object.assign(form, res)
     }
   } catch (e) {
@@ -181,16 +215,14 @@ const fetchProfile = async () => {
 const saveProfile = async () => {
   if (!userStore.user || !userStore.user.id) return
   try {
+    // 全量更新用户信息
     const updatedUser = await updateUserProfile(userStore.user.id, form)
-    console.log('Update response:', updatedUser) // Debug log
     if (updatedUser) {
+      // 同步更新 Pinia Store 中的全局用户信息（比如头部导航栏的头像需要立即响应）
       userStore.setUser(updatedUser)
       ElMessage.success(t('profile.updateSuccess'))
-      form.password = '' // Clear password field after save
-      isEditing.value = false // Return to display mode
-    } else {
-      console.warn('Updated user is empty')
-      // Even if empty, maybe success?
+      form.password = '' // 安全起见：保存成功后清空前端的明文密码字段
+      isEditing.value = false // 自动退出编辑模式
     }
   } catch (e) {
     console.error('Update profile error:', e)
@@ -198,13 +230,23 @@ const saveProfile = async () => {
   }
 }
 
+// ==========================================
+// 数据导出核心逻辑 (Blob URL 生成机制)
+// ==========================================
+// 将后端返回的 CSV 文本数据流转化为前端可下载的文件
 const downloadFile = (data, filename) => {
+  // 1. 利用 Blob 对象将纯文本封装为二进制文件对象
+  // 2. createObjectURL 为这个对象生成一个临时的浏览器内部 URL (blob:http://...)
   const url = window.URL.createObjectURL(new Blob([data]))
+  
+  // 3. 创建一个隐藏的 <a> 标签，模拟用户点击下载
   const link = document.createElement('a')
   link.href = url
   link.setAttribute('download', filename)
   document.body.appendChild(link)
-  link.click()
+  link.click() // 触发下载
+  
+  // 4. 清理 DOM 节点
   document.body.removeChild(link)
 }
 
@@ -212,7 +254,7 @@ const handleExportTasks = async () => {
   if (!userStore.user || !userStore.user.id) return
   exportingTasks.value = true
   try {
-    const data = await exportTasks(userStore.user.id)
+    const data = await exportTasks(userStore.user.id) // 返回 CSV 字符串
     downloadFile(data, 'my_tasks.csv')
     ElMessage.success(t('profile.tasksExported'))
   } catch (e) {

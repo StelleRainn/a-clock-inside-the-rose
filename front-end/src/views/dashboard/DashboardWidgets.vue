@@ -1,11 +1,16 @@
 <template>
   <div class="dashboard-widgets">
-    <!-- Header with Edit Mode Toggle -->
+    <!-- 
+    DashboardWidgets: 负责渲染并管理主页下方的各种数据挂件 (Widgets)。
+    支持编辑模式：用户可以自由添加或移除 Widget，实现高度个性化的空间。
+  -->
+    <!-- Header with Edit Mode Toggle (编辑模式开关头) -->
     <div class="widgets-header">
       <div class="left">
         <h2>{{ $t('widgets.mySpace') }}</h2>
       </div>
       <div class="right">
+        <!-- 非编辑状态：显示“Customize”按钮 -->
         <el-button 
           v-if="!isEditMode" 
           type="primary" 
@@ -14,6 +19,7 @@
         >
           {{ $t('widgets.customize') }}
         </el-button>
+        <!-- 编辑状态：显示“Add Card”和“Done”按钮 -->
         <div v-else class="edit-controls">
           <el-button type="success" size="small" @click="showAddWidget = true">
             <el-icon><Plus /></el-icon> {{ $t('widgets.addCard') }}
@@ -25,7 +31,7 @@
       </div>
     </div>
 
-    <!-- Empty State -->
+    <!-- Empty State (当用户删除了所有 Widget 时的占位图) -->
     <div v-if="activeWidgets.length === 0" class="empty-state">
       <h3>{{ $t('widgets.emptyTitle') }}</h3>
       <div class="add-widget-card" @click="showAddWidget = true">
@@ -34,25 +40,26 @@
       </div>
     </div>
 
-    <!-- Grid Layout -->
+    <!-- Grid Layout (核心的瀑布流/网格布局容器) -->
     <div v-else class="widgets-grid">
+      <!-- 遍历当前激活的 Widget 列表，动态计算它们所占的列数 (col-1 占一半，col-2 占满宽) -->
       <div 
         v-for="widget in activeWidgets" 
         :key="widget.id"
         class="widget-wrapper"
         :class="[`col-${widget.cols || 1}`, { 'is-editing': isEditMode }]"
       >
-        <!-- Remove Button (Edit Mode) -->
+        <!-- Remove Button (Edit Mode) (仅在编辑模式下显示的删除按钮) -->
         <div v-if="isEditMode" class="remove-btn" @click="removeWidget(widget.id)">
           <el-icon><Close /></el-icon>
         </div>
 
-        <!-- Dynamic Component -->
+        <!-- Dynamic Component (Vue 动态组件，根据 widget.type 渲染对应的 Vue 单文件组件) -->
         <component :is="getComponent(widget.type)" />
       </div>
     </div>
 
-    <!-- Widget Store Drawer -->
+    <!-- Widget Store Drawer (右侧抽屉式“Widget 商店”，用于挑选并添加新挂件) -->
     <el-drawer v-model="showAddWidget" :title="$t('widgets.storeTitle')" direction="rtl" size="300px">
       <div class="widget-store">
         <div 
@@ -77,65 +84,34 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { Plus, Close, Calendar, PieChart, List, ChatDotSquare } from '@element-plus/icons-vue'
+import { Plus, Close, Calendar, PieChart, List } from '@element-plus/icons-vue'
+// 导入所有拆分出去的 Widget 子组件
 import WidgetHeatmap from '@/components/widgets/WidgetHeatmap.vue'
 import WidgetFocusRing from '@/components/widgets/WidgetFocusRing.vue'
 import WidgetTodoList from '@/components/widgets/WidgetTodoList.vue'
 
-const { t } = useI18n()
-
+// UI 控制状态
 const isEditMode = ref(false)
 const showAddWidget = ref(false)
 
-// Default widgets for first-time users
+// Default widgets for first-time users (新手默认布局)
 const defaultWidgets = [
-  { id: 'w1', type: 'focus-ring', cols: 1 },
-  { id: 'w2', type: 'todo-list', cols: 1 },
-  { id: 'w3', type: 'heatmap', cols: 2 }
+  { id: 'w1', type: 'focus-ring', cols: 1 }, // 占 1 列 (半宽)
+  { id: 'w2', type: 'todo-list', cols: 1 },  // 占 1 列 (半宽)
+  { id: 'w3', type: 'heatmap', cols: 2 }     // 占 2 列 (全宽)
 ]
 
+// 当前激活在页面上的 Widget 列表
 const activeWidgets = ref([])
 
-// Load from local storage
-onMounted(() => {
-  const saved = localStorage.getItem('dashboard_widgets')
-  if (saved) {
-    activeWidgets.value = JSON.parse(saved)
-  } else {
-    activeWidgets.value = defaultWidgets
-  }
-})
-
-// Save on change
-watch(activeWidgets, (val) => {
-  localStorage.setItem('dashboard_widgets', JSON.stringify(val))
-}, { deep: true })
-
+// 供右侧“Widget 商店”渲染的静态数据字典
 const availableWidgets = [
-  { 
-    type: 'heatmap', 
-    nameKey: 'widgets.heatmap', 
-    descKey: 'widgets.heatmapDesc', 
-    icon: Calendar,
-    defaultCols: 2 
-  },
-  { 
-    type: 'focus-ring', 
-    nameKey: 'widgets.focusRing', 
-    descKey: 'widgets.focusRingDesc', 
-    icon: PieChart,
-    defaultCols: 1
-  },
-  { 
-    type: 'todo-list', 
-    nameKey: 'widgets.todoList', 
-    descKey: 'widgets.todoListDesc', 
-    icon: List,
-    defaultCols: 1
-  },
+  { type: 'focus-ring', icon: PieChart, nameKey: 'widgets.focusRingName', descKey: 'widgets.focusRingDesc', cols: 1 },
+  { type: 'todo-list', icon: List, nameKey: 'widgets.todoListName', descKey: 'widgets.todoListDesc', cols: 1 },
+  { type: 'heatmap', icon: Calendar, nameKey: 'widgets.heatmapName', descKey: 'widgets.heatmapDesc', cols: 2 }
 ]
 
+// 核心的映射函数：将 JSON 中的 type 字符串转换为对应的 Vue 组件对象
 const getComponent = (type) => {
   const map = {
     'heatmap': WidgetHeatmap,
@@ -145,15 +121,41 @@ const getComponent = (type) => {
   return map[type]
 }
 
+// 每次 activeWidgets 变化时，自动序列化并存储到 localStorage，实现布局记忆
+watch(activeWidgets, (newVal) => {
+  localStorage.setItem('dashboard_widgets', JSON.stringify(newVal))
+}, { deep: true })
+
+// 组件挂载时，优先从 localStorage 恢复用户自定义布局；若无，则加载默认布局
+onMounted(() => {
+  const saved = localStorage.getItem('dashboard_widgets')
+  if (saved) {
+    try {
+      activeWidgets.value = JSON.parse(saved)
+    } catch {
+      activeWidgets.value = [...defaultWidgets]
+    }
+  } else {
+    activeWidgets.value = [...defaultWidgets]
+  }
+})
+
+// 添加 Widget 逻辑
 const addWidget = (item) => {
+  // 防御：防止重复添加相同类型的 Widget (根据业务需求，这里限定每种类型只能有一个)
+  if (activeWidgets.value.some(w => w.type === item.type)) {
+    return // Already exists
+  }
+  
   activeWidgets.value.push({
-    id: Date.now().toString(),
+    id: `w_${Date.now()}`, // 生成唯一 ID
     type: item.type,
-    cols: item.defaultCols
+    cols: item.cols
   })
-  showAddWidget.value = false
+  showAddWidget.value = false // 添加成功后自动关闭抽屉
 }
 
+// 移除 Widget 逻辑
 const removeWidget = (id) => {
   activeWidgets.value = activeWidgets.value.filter(w => w.id !== id)
 }

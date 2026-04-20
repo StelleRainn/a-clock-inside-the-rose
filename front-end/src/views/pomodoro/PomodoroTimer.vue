@@ -1,6 +1,11 @@
 <template>
   <div class="pomodoro-container" :class="{ 'immersive-mode': isImmersive }">
+    <!-- 
+    PomodoroTimer: 番茄钟的核心视图组件。
+    负责渲染计时器进度条、任务关联选择器，并支持“沉浸模式”(Immersive Mode)。
+  -->
     <el-card class="timer-card" :class="{ 'immersive-card': isImmersive }">
+      <!-- 非沉浸模式下显示的常规卡片头部：包含 专注/休息 切换以及全屏按钮 -->
       <template #header v-if="!isImmersive">
         <div class="card-header">
           <el-radio-group v-model="sessionMode" @change="handleModeChange">
@@ -13,13 +18,14 @@
         </div>
       </template>
 
-      <!-- Immersive Header -->
+      <!-- 沉浸模式下的头部：只保留退出按钮 -->
       <div v-if="isImmersive" class="immersive-header">
         <el-button link class="exit-btn" @click="toggleImmersive">
           <el-icon><Close /></el-icon> Exit Focus Mode
         </el-button>
       </div>
 
+      <!-- 核心倒计时展示区：使用 el-progress 生成环形进度条 -->
       <div class="timer-display">
         <el-progress 
           type="dashboard" 
@@ -34,6 +40,7 @@
         </el-progress>
       </div>
 
+      <!-- 动态时长滑块：仅在非沉浸模式且未运行状态下允许用户快捷调整时长 -->
       <div class="slider-container" v-if="!isImmersive">
         <span class="duration-label">Duration (min)</span>
         <el-slider 
@@ -45,7 +52,7 @@
         />
       </div>
 
-      <!-- Task Selection Dropdown -->
+      <!-- 任务选择下拉框：仅在“专注模式”下显示，用于将本次专注时间关联到特定任务 -->
       <div class="task-selector" v-if="!isImmersive && isWorkSession">
         <el-select 
           v-model="selectedTask" 
@@ -69,16 +76,18 @@
         </el-select>
       </div>
       
-      <!-- Immersive Task Display -->
+      <!-- 沉浸模式下的当前任务展示：不再允许切换，只做文本提示 -->
       <div v-if="isImmersive && currentTaskTitle" class="immersive-task">
         <p>Focusing on: <strong>{{ currentTaskTitle }}</strong></p>
       </div>
 
+      <!-- 运行状态文字提示 -->
       <div class="status-text">
         <span v-if="pomodoroStore.isRunning">Running...</span>
         <span v-else>Paused</span>
       </div>
 
+      <!-- 播放控制区：根据当前状态显示开始/暂停/重置按钮 -->
       <div class="timer-controls">
         <el-button 
           v-if="!pomodoroStore.isRunning" 
@@ -110,7 +119,7 @@
         </el-button>
       </div>
       
-      <!-- White Noise Controls -->
+      <!-- 白噪音控制面板：仅在沉浸模式下提供，增强环境音体验 -->
       <div class="noise-controls" v-if="isImmersive">
         <p>White Noise</p>
         <el-radio-group v-model="currentNoise" size="small" @change="playNoise">
@@ -120,7 +129,7 @@
         </el-radio-group>
       </div>
 
-      <!-- Zen Note Input -->
+      <!-- 禅意笔记 (Zen Note)：允许在专注时快速记录闪念并作为 LOW 优先级任务存入收件箱 -->
       <div v-if="isImmersive" class="zen-note-container">
         <el-input 
           v-model="zenNote" 
@@ -134,12 +143,13 @@
         </el-input>
       </div>
 
+      <!-- 底部今日统计数据概览 -->
       <div class="stats-footer" v-if="!isImmersive">
         <p>Completed Pomodoros Today: {{ pomodoroStore.completedPomodoros }}</p>
       </div>
     </el-card>
     
-    <!-- Hidden Audio Elements -->
+    <!-- 隐藏的音频元素：承载白噪音资源，通过 ref 操控播放与暂停 -->
     <audio ref="rainAudio" loop src="https://assets.mixkit.co/active_storage/sfx/2496/2496-preview.mp3"></audio>
     <audio ref="cafeAudio" loop src="https://assets.mixkit.co/active_storage/sfx/248/248-preview.mp3"></audio>
   </div>
@@ -162,18 +172,21 @@ const currentNoise = ref('none')
 const rainAudio = ref(null)
 const cafeAudio = ref(null)
 const tasks = ref([])
+const zenNote = ref('')
+
+// 拦截双向绑定，使选中的任务 ID 始终与 pomodoroStore 保持同步
 const selectedTask = computed({
   get: () => pomodoroStore.selectedTaskId,
   set: (val) => pomodoroStore.selectTask(val)
 })
-const zenNote = ref('')
 
+// 判断当前是否处于“专注”阶段 (非休息阶段)
 const isWorkSession = computed(() => pomodoroStore.currentMode === 'pomodoro')
 
-// Sync sessionMode with store state
+// 监听工作模式的变化，并同步更新视图中的 Slider 和 Radio 按钮
 watch(() => isWorkSession.value, (isWork) => {
   sessionMode.value = isWork ? 'work' : 'break'
-  // Update slider value based on current duration setting
+  // 根据当前模式从 Store 读取对应的默认时长并除以 60 转为分钟显示
   const duration = isWork ? pomodoroStore.pomodoroDuration : (pomodoroStore.currentMode === 'short-break' ? pomodoroStore.shortBreakDuration : pomodoroStore.longBreakDuration)
   sliderValue.value = Math.floor(duration / 60)
 }, { immediate: true })
@@ -190,9 +203,9 @@ const handleTaskSelect = (val) => {
   pomodoroStore.selectTask(val)
 }
 
+// 切换沉浸模式并调用浏览器原生 API 实现真正的全屏
 const toggleImmersive = () => {
   isImmersive.value = !isImmersive.value
-  // Optional: Enter browser fullscreen
   if (isImmersive.value) {
     document.documentElement.requestFullscreen().catch(() => {})
   } else {
@@ -202,8 +215,8 @@ const toggleImmersive = () => {
   }
 }
 
+// 白噪音播放控制逻辑：切换时先停止所有音频，再播放目标音频
 const playNoise = (val) => {
-  // Stop all first
   rainAudio.value?.pause()
   cafeAudio.value?.pause()
   
@@ -214,6 +227,7 @@ const playNoise = (val) => {
   }
 }
 
+// 保存闪念笔记：作为一条低优先级 TODO 任务发送给后端
 const saveZenNote = async () => {
   if (!zenNote.value.trim()) return
   if (!userStore.user || !userStore.user.id) {
@@ -237,10 +251,10 @@ const saveZenNote = async () => {
   }
 }
 
+// 获取当前用户的任务列表以供下拉框选择
 const fetchUserTasks = async () => {
   if (userStore.user && userStore.user.id) {
     try {
-      // Fetch only IN_PROGRESS or TODO tasks ideally, but for now fetch all
       const data = await getTasks(userStore.user.id)
       tasks.value = data.filter(t => t.status !== 'DONE') || []
     } catch {
@@ -249,12 +263,14 @@ const fetchUserTasks = async () => {
   }
 }
 
+// 根据选中的 Task ID 查找任务名称，用于沉浸模式下的纯文本展示
 const currentTaskTitle = computed(() => {
   if (!pomodoroStore.selectedTaskId) return null
   const task = tasks.value.find(t => String(t.id) === pomodoroStore.selectedTaskId)
   return task ? task.title : null
 })
 
+// 为任务优先级提供颜色主题映射
 const getPriorityType = (priority) => {
   const map = {
     'HIGH': 'danger',
@@ -264,6 +280,7 @@ const getPriorityType = (priority) => {
   return map[priority] || ''
 }
 
+// 专注模式时进度条为蓝色，休息模式时为绿色
 const progressColor = computed(() => {
   return isWorkSession.value ? '#409eff' : '#67c23a'
 })
@@ -271,7 +288,7 @@ const progressColor = computed(() => {
 onMounted(() => {
   pomodoroStore.fetchTodayCount()
   fetchUserTasks()
-  // Initialize slider value correctly on mount
+  // 组件挂载时初始化一次进度条滑块的时长
   const duration = isWorkSession.value ? pomodoroStore.pomodoroDuration : (pomodoroStore.currentMode === 'short-break' ? pomodoroStore.shortBreakDuration : pomodoroStore.longBreakDuration)
   sliderValue.value = Math.floor(duration / 60)
 })

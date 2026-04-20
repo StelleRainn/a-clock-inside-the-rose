@@ -1,6 +1,11 @@
 <template>
   <div class="task-list-container">
+    <!-- 
+    TaskListView: 任务列表的核心视图组件。
+    支持 List View (带子任务展开) 和 Kanban View (拖拽状态流转) 两种模式的无缝切换。
+  -->
     <el-card class="glass-card main-task-card">
+      <!-- 头部：标题与新建按钮 -->
       <template #header>
         <div class="card-header">
           <span>{{ $t('tasks.title') }}</span>
@@ -8,7 +13,7 @@
         </div>
       </template>
 
-      <!-- Filter & Sort Bar -->
+      <!-- Filter & Sort Bar: 提供强大的本地搜索、标签过滤与多维度排序功能 -->
       <div class="filter-bar">
         <el-input
           v-model="searchQuery"
@@ -44,6 +49,7 @@
           <el-option :label="$t('tasks.sortStatus')" value="status" />
         </el-select>
 
+        <!-- 仅在非 manual 排序下允许切换升序/降序 -->
         <el-button @click="toggleSortOrder" :icon="sortOrder === 'asc' ? 'SortUp' : 'SortDown'" :disabled="sortBy === 'manual'">
           {{ sortOrder === 'asc' ? $t('tasks.asc') : $t('tasks.desc') }}
         </el-button>
@@ -51,7 +57,12 @@
         <el-button @click="resetFilters" icon="RefreshLeft" type="info" plain>{{ $t('tasks.reset') }}</el-button>
       </div>
 
+      <!-- 视图切换 Tabs: List / Kanban -->
       <el-tabs v-model="activeName">
+        <!-- 
+          1. List View (列表视图) 
+          支持分页、表格行内编辑、以及通过 row-click 触发展开子任务。
+        -->
         <el-tab-pane :label="$t('tasks.listView')" name="list">
           <el-table 
             :key="tableKey"
@@ -63,21 +74,25 @@
             class="draggable-table"
             :row-class-name="tableRowClassName"
           >
+            <!-- 子任务展开列 (Expand Column) -->
             <el-table-column type="expand">
               <template #default="props">
                 <div class="subtask-container">
                   <div class="subtask-header">
                     <h4>{{ $t('tasks.subtasks') }} ({{ props.row.subtasks ? props.row.subtasks.length : 0 }})</h4>
-                    <el-button size="small" type="primary" link @click="openAddSubtask(props.row)">{{ $t('tasks.addSubtask') }}</el-button>
+                    <!-- 阻止冒泡，防止点击时触发外层行的编辑事件 -->
+                    <el-button size="small" type="primary" link @click.stop="openAddSubtask(props.row)">{{ $t('tasks.addSubtask') }}</el-button>
                   </div>
                   <div v-if="!props.row.subtasks || props.row.subtasks.length === 0" class="no-subtasks">
                     {{ $t('tasks.noSubtasks') }}
                   </div>
                   <ul v-else class="subtask-list">
                     <li v-for="sub in props.row.subtasks" :key="sub.id" class="subtask-item">
+                      <!-- 状态联动：直接向后端发送更新 -->
                       <el-checkbox 
                         v-model="sub.completed" 
                         @change="(val) => handleSubtaskStatusChange(sub, val)"
+                        @click.stop
                       >
                         <span :class="{ 'completed-text': sub.completed }">{{ sub.title }}</span>
                       </el-checkbox>
@@ -87,7 +102,7 @@
                         circle 
                         size="small" 
                         link 
-                        @click="handleDeleteSubtask(sub.id, props.row)"
+                        @click.stop="handleDeleteSubtask(sub.id, props.row)"
                       />
                     </li>
                   </ul>
@@ -95,9 +110,11 @@
               </template>
             </el-table-column>
 
+            <!-- 标题 -->
             <el-table-column prop="title" :label="$t('tasks.taskName')" min-width="200">
               <template #default="scope">
                 <div class="task-info-cell">
+                  <!-- 过期/临期视觉高亮 -->
                   <span :class="{'overdue-text': isOverdue(scope.row), 'neardue-text': isNearDue(scope.row)}">
                     {{ scope.row.title }}
                   </span>
@@ -108,7 +125,7 @@
                     <el-icon class="alert-icon neardue"><WarningFilled /></el-icon>
                   </el-tooltip>
                   
-                  <!-- Mobile Meta Info -->
+                  <!-- Mobile Meta Info (移动端降级展示：将标签和日期压缩在标题下方) -->
                   <div v-if="isMobile" class="mobile-meta">
                     <el-tag size="small" :type="getPriorityType(scope.row.priority)" effect="plain" class="mr-1">{{ $t(`tasks.${scope.row.priority.toLowerCase()}`) }}</el-tag>
                     <span v-if="scope.row.dueDate" class="mobile-date" :class="{'overdue-text': isOverdue(scope.row)}">
@@ -118,6 +135,9 @@
                 </div>
               </template>
             </el-table-column>
+            
+            <!-- 以下列在移动端 (max-width: 768px) 会被隐藏，避免表格挤压变形 -->
+            <!-- 标签 -->
             <el-table-column :label="$t('tasks.tags')" width="200" v-if="!isMobile">
               <template #default="scope">
                 <el-tag 
@@ -133,23 +153,31 @@
                 </el-tag>
               </template>
             </el-table-column>
+
+            <!-- 优先级 -->
             <el-table-column prop="priority" :label="$t('tasks.priority')" width="120" v-if="!isMobile">
               <template #default="scope">
                 <el-tag :type="getPriorityType(scope.row.priority)">{{ $t(`tasks.${scope.row.priority.toLowerCase()}`) }}</el-tag>
               </template>
             </el-table-column>
+
+            <!-- 状态 -->
             <el-table-column prop="status" :label="$t('tasks.status')" width="120" v-if="!isMobile">
-               <template #default="scope">
+              <template #default="scope">
                 <el-tag :type="getStatusType(scope.row.status)">{{ formatStatus(scope.row.status) }}</el-tag>
               </template>
             </el-table-column>
+
+            <!-- 截止日期 -->
             <el-table-column prop="dueDate" :label="$t('tasks.dueDate')" width="180" v-if="!isMobile">
-               <template #default="scope">
-                 <span :class="{'overdue-text': isOverdue(scope.row), 'neardue-text': isNearDue(scope.row)}">
-                   {{ formatDate(scope.row.dueDate) }}
-                 </span>
-               </template>
+              <template #default="scope">
+                <span :class="{'overdue-text': isOverdue(scope.row), 'neardue-text': isNearDue(scope.row)}">
+                  {{ formatDate(scope.row.dueDate) }}
+                </span>
+              </template>
             </el-table-column>
+            
+            <!-- 操作 -->
             <el-table-column :label="$t('tasks.actions')" :width="isMobile ? 100 : 160" fixed="right" align="center">
               <template #default="scope">
                 <div class="action-buttons">
@@ -164,7 +192,7 @@
             </el-table-column>
           </el-table>
 
-          <!-- Pagination -->
+          <!-- Pagination 分页 -->
           <div class="pagination-container">
             <el-pagination
               v-model:current-page="currentPage"
@@ -177,6 +205,11 @@
             />
           </div>
         </el-tab-pane>
+
+        <!-- 
+          2. Kanban View (看板视图)
+          利用 vuedraggable 实现的经典三列任务流转板。
+        -->
         <el-tab-pane :label="$t('tasks.kanbanView')" name="kanban">
           <div class="kanban-board">
             <div class="kanban-column" v-for="status in ['TODO', 'IN_PROGRESS', 'DONE']" :key="status">
@@ -184,6 +217,7 @@
                 <h3>{{ formatStatus(status) }}</h3>
                 <el-tag :type="getStatusType(status)">{{ kanbanColumns[status].length }}</el-tag>
               </div>
+              <!-- draggable: 当任务在列与列之间拖拽时，会触发 @change 并调用 handleKanbanChange 同步状态到后端 -->
               <draggable 
                 :list="kanbanColumns[status]" 
                 group="tasks" 
@@ -193,6 +227,7 @@
                 :disabled="isDragDisabled"
               >
                 <template #item="{ element }">
+                  <!-- 任务标题 -->
                   <div class="kanban-card" @click="handleEdit(element)" :class="{'overdue-card': isOverdue(element), 'neardue-card': isNearDue(element)}">
                     <div class="card-title">
                       {{ element.title }}
@@ -200,7 +235,7 @@
                       <el-icon v-else-if="isNearDue(element)" class="alert-icon neardue-kanban"><WarningFilled /></el-icon>
                     </div>
                     
-                    <!-- Subtask Progress in Kanban -->
+                    <!-- Subtask Progress in Kanban: 以微型进度条形式直观展示子任务完成度 -->
                     <div class="subtask-progress" v-if="element.subtasks && element.subtasks.length > 0">
                       <el-progress 
                         :percentage="calculateProgress(element.subtasks)" 
@@ -213,6 +248,7 @@
                       </span>
                     </div>
 
+                    <!-- 标签 -->
                     <div class="card-tags" v-if="element.tags && element.tags.length">
                       <el-tag 
                         v-for="tag in element.tags" 
@@ -226,6 +262,7 @@
                         {{ tag.name }}
                       </el-tag>
                     </div>
+                    <!-- 优先级 -->
                     <div class="card-meta">
                       <el-tag size="small" :type="getPriorityType(element.priority)">{{ $t(`tasks.${element.priority.toLowerCase()}`) }}</el-tag>
                       <span class="card-date" v-if="element.dueDate" :class="{'overdue-text': isOverdue(element), 'neardue-text': isNearDue(element)}">
@@ -241,7 +278,7 @@
       </el-tabs>
     </el-card>
 
-    <!-- Task Dialog -->
+    <!-- Task Dialog (新建/编辑任务表单弹窗，逻辑类似前面分析的全局 TaskFormDialog) -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle">
       <el-form :model="taskForm" label-width="100px">
         <el-form-item :label="$t('tasks.titleLabel')">
@@ -251,7 +288,6 @@
           <el-input v-model="taskForm.description" type="textarea" />
         </el-form-item>
         
-        <!-- Tag Selection -->
         <el-form-item :label="$t('tasks.tags')">
           <el-select
             v-model="selectedTagIds"
@@ -303,7 +339,7 @@
       </template>
     </el-dialog>
 
-    <!-- Subtask Add Dialog -->
+    <!-- Subtask Add Dialog (添加子任务的弹窗) -->
     <el-dialog v-model="subtaskDialogVisible" :title="$t('tasks.addSubtask')" width="30%">
       <el-input v-model="newSubtaskTitle" :placeholder="$t('tasks.subtaskTitlePlaceholder')" @keyup.enter="submitSubtask" />
       <template #footer>
@@ -335,6 +371,7 @@ const activeName = ref('list')
 const tableData = ref([])
 const loading = ref(false)
 const userStore = useUserStore()
+// 响应式降级标志：宽度小于 768px 时，隐藏部分表格列
 const isMobile = ref(window.innerWidth < 768)
 
 const handleResize = () => {
@@ -365,12 +402,12 @@ const currentParentTask = ref(null)
 const availableTags = ref([])
 const selectedTagIds = ref([])
 
-// Filters & Sort
+// Filters & Sort (过滤与排序的响应式状态)
 const searchQuery = ref('')
 const selectedFilterTags = ref([])
-const sortBy = ref('manual') // Default manual sort
-const sortOrder = ref('asc') // asc or desc
-const tableKey = ref(0) // Key to force re-render table
+const sortBy = ref('manual') // 默认使用 manual (手动拖拽排序)
+const sortOrder = ref('asc') // asc (升序) or desc (降序)
+const tableKey = ref(0) // 强制重新渲染 ElTable 的 Key 技巧
 
 const taskForm = reactive({
   title: '',
@@ -380,6 +417,9 @@ const taskForm = reactive({
   dueDate: ''
 })
 
+// ==========================================
+// 1. 数据拉取层 (Data Fetching)
+// ==========================================
 const fetchTasks = async () => {
   if (!userStore.user || !userStore.user.id) return
   loading.value = true
@@ -403,7 +443,10 @@ const fetchTags = async () => {
   }
 }
 
-// Subtask Logic
+// ==========================================
+// 2. 子任务逻辑层 (Subtask Logic)
+// 包含独立的增删改逻辑，更新后直接操作前端内存树，避免刷新整个列表
+// ==========================================
 const openAddSubtask = (task) => {
   currentParentTask.value = task
   newSubtaskTitle.value = ''
@@ -418,7 +461,7 @@ const submitSubtask = async () => {
       title: newSubtaskTitle.value,
       completed: false
     })
-    // Update local state
+    // 乐观更新：直接推入当前父任务的 subtasks 数组中
     if (!currentParentTask.value.subtasks) {
       currentParentTask.value.subtasks = []
     }
@@ -430,18 +473,20 @@ const submitSubtask = async () => {
   }
 }
 
+// 子任务状态变更（打勾/取消打勾）
 const handleSubtaskStatusChange = async (sub, val) => {
   try {
     await updateSubtask(sub.id, { ...sub, completed: val })
   } catch {
     ElMessage.error('Failed to update subtask')
-    sub.completed = !val // Revert on error
+    sub.completed = !val // 请求失败时，将前端 Checkbox 状态回滚
   }
 }
 
 const handleDeleteSubtask = async (subId, parentTask) => {
   try {
     await deleteSubtask(subId)
+    // 乐观更新：从父任务数组中滤除该子任务
     parentTask.subtasks = parentTask.subtasks.filter(s => s.id !== subId)
     ElMessage.success('Subtask deleted')
   } catch {
@@ -449,16 +494,19 @@ const handleDeleteSubtask = async (subId, parentTask) => {
   }
 }
 
+// 计算子任务进度百分比 (用于看板视图展示)
 const calculateProgress = (subtasks) => {
   if (!subtasks || subtasks.length === 0) return 0
   const completed = subtasks.filter(s => s.completed).length
   return Math.round((completed / subtasks.length) * 100)
 }
 
-// Due Date Alerts
+// ==========================================
+// 3. 日期警告计算逻辑 (Date Alerts)
+// ==========================================
 const isOverdue = (task) => {
   if (task.status === 'DONE' || !task.dueDate) return false
-  return new Date(task.dueDate) < new Date()
+  return new Date(task.dueDate) < new Date() // 已过 deadline
 }
 
 const isNearDue = (task) => {
@@ -466,23 +514,26 @@ const isNearDue = (task) => {
   const due = new Date(task.dueDate)
   const now = new Date()
   const diffHours = (due - now) / (1000 * 60 * 60)
-  return diffHours > 0 && diffHours <= 24 // Within 24 hours
+  return diffHours > 0 && diffHours <= 24 // 距离 deadline 仅剩 24 小时以内
 }
 
 const currentPage = ref(1)
 const pageSize = ref(10)
 
-// Computed Filtered Tasks
+// ==========================================
+// 4. 核心过滤与排序管道 (Computed Pipeline)
+// 依次执行：源数据 -> 标题过滤 -> 标签过滤 -> 状态分离 -> 排序 -> 合并
+// ==========================================
 const filteredTasks = computed(() => {
   let result = [...tableData.value]
 
-  // 1. Filter by Title
+  // 1. 过滤：按标题搜索
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(task => task.title.toLowerCase().includes(query))
   }
 
-  // 2. Filter by Tags
+  // 2. 过滤：按选中的标签多选过滤 (交集逻辑)
   if (selectedFilterTags.value.length > 0) {
     result = result.filter(task => {
       if (!task.tags) return false
@@ -491,33 +542,29 @@ const filteredTasks = computed(() => {
     })
   }
 
-  // 3. Sort
-  // Separate Done and Not Done
+  // 3. 状态分离：无论如何排序，已完成(DONE)的任务始终被垫底
   const notDone = result.filter(t => t.status !== 'DONE')
   const done = result.filter(t => t.status === 'DONE')
 
-  // Sort Not Done
+  // 4. 排序逻辑：执行未完成任务的排序
   if (sortBy.value === 'manual') {
-    // Keep backend order (position)
-    // But we need to ensure they are sorted by position just in case
-    // Assuming backend returns sorted by position
+    // manual 模式下保持后端返回的原始顺序（基于 position 字段）
   } else {
     sortTasks(notDone)
   }
 
-  // Sort Done (Always by Date desc or user pref?)
-  // User req: "In Done tasks, sort by date"
-  // Let's sort done tasks by Due Date descending (most recent due first) or Created At
+  // 已完成的任务固定按完成时间（或截止时间）倒序排列
   done.sort((a, b) => {
     const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0
     const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0
     return dateB - dateA // Descending
   })
 
-  // Merge: Not Done + Done (Done at bottom)
+  // 5. 合并并返回最终视图数组
   return [...notDone, ...done]
 })
 
+// 自定义排序器
 const sortTasks = (list) => {
   list.sort((a, b) => {
     let valA, valB
@@ -536,6 +583,7 @@ const sortTasks = (list) => {
         break
       }
       case 'dueDate':
+        // 空日期永远排在最后
         valA = a.dueDate ? new Date(a.dueDate).getTime() : (sortOrder.value === 'asc' ? Infinity : -Infinity)
         valB = b.dueDate ? new Date(b.dueDate).getTime() : (sortOrder.value === 'asc' ? Infinity : -Infinity)
         break
@@ -551,6 +599,7 @@ const sortTasks = (list) => {
   })
 }
 
+// 5. 分页截取
 const paginatedTasks = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   const end = start + pageSize.value
@@ -575,6 +624,7 @@ const toggleSortOrder = () => {
   sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
 }
 
+// 重置筛选
 const resetFilters = () => {
   searchQuery.value = ''
   selectedFilterTags.value = []
@@ -582,30 +632,33 @@ const resetFilters = () => {
   sortOrder.value = 'asc'
 }
 
-// Drag & Drop for List View
+// ==========================================
+// 6. List View 的原生拖拽排序 (Sortable.js)
+// 只有在 manual 排序且没有应用任何过滤器时才允许拖拽，否则数据大乱
+// ==========================================
 let sortableInstance = null
 
 const initSortable = () => {
   const table = document.querySelector('.draggable-table .el-table__body-wrapper tbody')
   if (!table) return
 
-  // Destroy previous instance if exists
+  // 销毁旧实例，防止内存泄漏或重复绑定
   if (sortableInstance) {
     sortableInstance.destroy()
     sortableInstance = null
   }
 
-  // Only enable if manual sort and no filters
+  // 严格拦截：如果正在使用高级排序或搜索过滤，禁止拖拽
   if (sortBy.value !== 'manual' || searchQuery.value || selectedFilterTags.value.length > 0) {
     return
   }
 
   sortableInstance = Sortable.create(table, {
-    handle: '.el-table__row', // Drag whole row
-    filter: '.done-row', // Disable dragging for done rows
+    handle: '.el-table__row', // 允许拖拽整行
+    filter: '.done-row', // 已完成的任务行禁止拖拽
     animation: 150,
     onMove: (evt) => {
-      // Prevent dragging INTO a done row (or swapping with it)
+      // 阻止将未完成任务拖拽到已完成区域
       if (evt.related.classList.contains('done-row')) {
         return false
       }
@@ -616,45 +669,42 @@ const initSortable = () => {
       
       const currentList = [...paginatedTasks.value]
       
-      // Check if moving into Done section
+      // 越界检查防御
       const firstDoneIndex = currentList.findIndex(t => t.status === 'DONE')
-      
       if (firstDoneIndex !== -1 && newIndex >= firstDoneIndex) {
         ElMessage.warning('Cannot drag tasks into Done section')
-        // Force update to revert DOM
-        tableKey.value++
+        tableKey.value++ // 通过更新 key 强制 Vue 重新渲染表格，还原 DOM 拖拽造成的破坏
         return
       }
       
-      // Modify current list directly
+      // 前端内存数组元素置换
       const movedItem = currentList.splice(oldIndex, 1)[0]
       currentList.splice(newIndex, 0, movedItem)
 
-      // Replace the current page's slice in the fully filtered array
+      // 将当前页的顺序映射回全局完整数组中
       const allTasks = [...filteredTasks.value]
       const start = (currentPage.value - 1) * pageSize.value
       allTasks.splice(start, pageSize.value, ...currentList)
 
-      // Get new order of IDs from the ALL tasks to ensure position integrity
+      // 提取最新的全局 ID 顺序数组，准备发给后端
       const newOrderIds = allTasks.map(t => t.id)
       
-      // Update local state and force re-render
+      // 乐观更新：立刻让 UI 生效
       tableData.value = allTasks
       tableKey.value++
       
       try {
+        // 调用后端 reorder 接口，执行真正的数据库 Position 更新
         await reorderTasks(newOrderIds)
       } catch {
         ElMessage.error('Failed to update order')
-        fetchTasks() // Revert
+        fetchTasks() // 如果失败，重新拉取后端真实数据回滚 UI
       }
     }
   })
 }
 
-// Watchers to re-init or destroy sortable
-// watch is already imported at top
-
+// 监听各种状态，在视图切换回 List 或取消过滤时重新初始化拖拽引擎
 watch([sortBy, searchQuery, selectedFilterTags, activeName, loading, tableKey], () => {
   nextTick(() => {
     if (activeName.value === 'list' && !loading.value) {
@@ -666,9 +716,83 @@ watch([sortBy, searchQuery, selectedFilterTags, activeName, loading, tableKey], 
   })
 })
 
-// Original onMounted removed, handled at top
+// ==========================================
+// 7. Kanban View 逻辑 (看板模式)
+// ==========================================
+const kanbanColumns = reactive({
+  'TODO': [],
+  'IN_PROGRESS': [],
+  'DONE': []
+})
 
+// 保持过滤后的任务数组与看板三列数据的实时同步
+watch(filteredTasks, (tasks) => {
+  const groups = {
+    'TODO': [],
+    'IN_PROGRESS': [],
+    'DONE': []
+  }
+  
+  tasks.forEach(t => {
+    if (groups[t.status]) groups[t.status].push(t)
+  })
+  
+  // 对看板内的每一列进行二次排序 (位置 > 截止日期 > 优先级)
+  Object.keys(groups).forEach(status => {
+    groups[status].sort((a, b) => {
+      // 1. Position (Asc)
+      if (a.position !== b.position) return a.position - b.position
+      
+      // 2. Due Date (Asc, null last)
+      const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity
+      const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity
+      if (dateA !== dateB) return dateA - dateB
+      
+      // 3. Priority (High to Low)
+      const pMap = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 }
+      return (pMap[b.priority] || 0) - (pMap[a.priority] || 0)
+    })
+  })
+  
+  kanbanColumns['TODO'] = groups['TODO']
+  kanbanColumns['IN_PROGRESS'] = groups['IN_PROGRESS']
+  kanbanColumns['DONE'] = groups['DONE']
+}, { deep: true, immediate: true })
 
+// 看板拖拽事件核心处理：列内排序 (Reorder) 与跨列移动 (Change Status)
+const handleKanbanChange = async (evt, status) => {
+  // 场景 A: 同一列内的上下拖拽改变顺序
+  if (evt.moved) {
+    const newOrderIds = kanbanColumns[status].map(t => t.id)
+    try {
+      await reorderTasks(newOrderIds)
+    } catch {
+      ElMessage.error('Failed to update order')
+    }
+  }
+  
+  // 场景 B: 跨列拖拽 (比如从 TODO 拖入 IN_PROGRESS)
+  if (evt.added) {
+    const task = evt.added.element
+    
+    // 1. 乐观更新：立刻修改内存中该任务的状态为目标列状态
+    task.status = status
+    
+    // 2. 提取目标列全新的 ID 顺序数组
+    const newOrderIds = kanbanColumns[status].map(t => t.id)
+    
+    try {
+      // 并发或顺序执行：先更新状态，再更新目标列的顺序
+      await updateTask(task.id, { ...task, status: status, userId: userStore.user.id })
+      await reorderTasks(newOrderIds)
+    } catch {
+      ElMessage.error('Failed to update task')
+      fetchTasks() // 回滚
+    }
+  }
+}
+
+// 辅助方法：标签动态创建、表单重置等 (代码略...)
 const handleTagChange = async (val) => {
   // Check if new tag created
   const newTagNames = val.filter(v => typeof v === 'string')
@@ -840,87 +964,6 @@ const formatStatus = (status) => {
 const isDragDisabled = computed(() => {
   return searchQuery.value || selectedFilterTags.value.length > 0
 })
-
-// Kanban Logic
-const kanbanColumns = reactive({
-  'TODO': [],
-  'IN_PROGRESS': [],
-  'DONE': []
-})
-
-// Sync Filtered Tasks to Kanban Columns
-watch(filteredTasks, (tasks) => {
-  // We only sync if NOT dragging (to avoid jitter), but here we rebuild columns
-  // To preserve drag state, draggable handles the array mutation.
-  // But if filters change, we MUST rebuild.
-  // A simple strategy: Always rebuild on filter/data change.
-  
-  const groups = {
-    'TODO': [],
-    'IN_PROGRESS': [],
-    'DONE': []
-  }
-  
-  tasks.forEach(t => {
-    if (groups[t.status]) groups[t.status].push(t)
-  })
-  
-  // Sort each group
-  Object.keys(groups).forEach(status => {
-    groups[status].sort((a, b) => {
-      // 1. Position (Asc)
-      if (a.position !== b.position) return a.position - b.position
-      
-      // 2. Due Date (Asc, null last)
-      const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity
-      const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity
-      if (dateA !== dateB) return dateA - dateB
-      
-      // 3. Priority (High to Low)
-      const pMap = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 }
-      return (pMap[b.priority] || 0) - (pMap[a.priority] || 0)
-    })
-  })
-  
-  kanbanColumns['TODO'] = groups['TODO']
-  kanbanColumns['IN_PROGRESS'] = groups['IN_PROGRESS']
-  kanbanColumns['DONE'] = groups['DONE']
-}, { deep: true, immediate: true })
-
-const handleKanbanChange = async (evt, status) => {
-  // Handle Move (Reorder in same column)
-  if (evt.moved) {
-    const newOrderIds = kanbanColumns[status].map(t => t.id)
-    try {
-      await reorderTasks(newOrderIds)
-      // ElMessage.success('Order updated')
-    } catch {
-      ElMessage.error('Failed to update order')
-    }
-  }
-  
-  // Handle Add (Move from another column)
-  if (evt.added) {
-    const task = evt.added.element
-    
-    // 1. Update Status
-    task.status = status
-    
-    // 2. Update Position (Send full list order of new column)
-    const newOrderIds = kanbanColumns[status].map(t => t.id)
-    
-    try {
-      // We can do both in parallel or sequential
-      // Update status first
-      await updateTask(task.id, { ...task, status: status, userId: userStore.user.id })
-      // Then reorder
-      await reorderTasks(newOrderIds)
-    } catch {
-      ElMessage.error('Failed to update task')
-      fetchTasks() // Revert
-    }
-  }
-}
 
 // Old helpers removal (getTasksByStatus, handleDragChange)
 // ... (replaced by above)

@@ -1,5 +1,9 @@
 <template>
   <div class="settings-dialog-container">
+    <!-- 
+    设置弹窗主容器：采用左侧导航(sidebar) + 右侧内容(content) 的经典两栏布局。
+    在移动端通过媒体查询 (max-width: 768px) 会自适应转变为上下布局（导航栏横向滚动）。
+  -->
     <div class="sidebar">
       <div 
         class="menu-item" 
@@ -25,9 +29,13 @@
     </div>
     
     <div class="content">
-      <!-- General: Background Image -->
+      <!-- 
+        Tab 1: General (常规设置)
+        核心功能：背景图选择、自定义背景图上传、Hero Theme 字体反色策略、背景遮罩透明度调节。
+      -->
       <div v-if="activeTab === 'general'" class="tab-pane">
         <h3>{{ $t('settings.background') }}</h3>
+        <!-- 隐藏的原生文件上传控件，通过点击事件代理触发 -->
         <input 
           type="file" 
           ref="fileInput" 
@@ -36,6 +44,7 @@
           @change="handleFileUpload"
         >
         <div class="bg-grid">
+          <!-- 极简纯黑背景选项 -->
           <div 
             class="bg-item" 
             :class="{ active: !tempBg }"
@@ -45,6 +54,7 @@
             <span>Minimal Black</span>
           </div>
           
+          <!-- 自定义上传背景选项：结合 IndexedDB 实现本地持久化 -->
           <div 
             class="bg-item" 
             :class="{ active: tempBg === 'custom' }"
@@ -67,6 +77,7 @@
             <span>{{ $t('settings.customImage') }}</span>
           </div>
 
+          <!-- 系统预设背景列表渲染 -->
           <div 
             v-for="bg in backgrounds" 
             :key="bg" 
@@ -82,11 +93,13 @@
           </div>
         </div>
 
+        <!-- 仅当选中了图片背景时，才显示主题与透明度设置 -->
         <div v-if="tempBg" class="mt-4">
           <h3>{{ $t('settings.theme') }}</h3>
           <div class="form-col">
             <div class="form-group full-width">
               <label>Hero Text Theme</label>
+              <!-- 控制 HeaderNav 文字颜色是深色还是浅色，auto 为借助 fast-average-color 自动分析 -->
               <el-radio-group v-model="heroTheme" size="small">
                 <el-radio-button label="auto">{{ $t('settings.auto') }}</el-radio-button>
                 <el-radio-button label="light">{{ $t('settings.light') }}</el-radio-button>
@@ -104,7 +117,10 @@
         </div>
       </div>
 
-      <!-- Timers: Duration & Auto-start -->
+      <!-- 
+        Tab 2: Timers (番茄钟设置)
+        核心功能：配置专注时长、短休、长休时长，以及自动流转规则。
+      -->
       <div v-if="activeTab === 'timers'" class="tab-pane">
         <h3>{{ $t('settings.durations') }}</h3>
         <div class="form-row">
@@ -139,11 +155,14 @@
         </div>
       </div>
 
-      <!-- Sounds: Volume & Selection -->
+      <!-- 
+        Tab 3: Sounds (声音设置)
+        核心功能：白噪音/提示音的选择、音量控制及全局开关。
+      -->
       <div v-if="activeTab === 'sounds'" class="tab-pane">
         <h3>{{ $t('settings.sound') }}</h3>
         <div class="form-col">
-           <div class="form-group full-width">
+          <div class="form-group full-width">
             <label>{{ $t('settings.alertSound') }}</label>
             <el-select v-model="selectedSound">
               <el-option :label="$t('settings.bell')" value="bell" />
@@ -184,26 +203,36 @@ import { ElMessage } from 'element-plus'
 
 const emit = defineEmits(['close'])
 const pomodoroStore = usePomodoroStore()
+
+// UI 控制状态
 const activeTab = ref('general')
+
+// ==========================================
+// 自定义背景图片上传逻辑 (借助 IndexedDB)
+// 核心难点：浏览器不能直接保存大文件到 LocalStorage，故采用 IndexedDB (imageDb) 进行本地化持久存储。
+// ==========================================
 const fileInput = ref(null)
-const pendingFile = ref(null)
-const localCustomUrl = ref(pomodoroStore.customBgUrl)
+const pendingFile = ref(null) // 暂存用户选中的文件，点击 Save 后才入库
+const localCustomUrl = ref(pomodoroStore.customBgUrl) // 生成的 Blob URL，用于即时预览
 const isCustomDeleted = ref(false)
 
 const handleFileUpload = (event) => {
   const file = event.target.files[0]
   if (!file) return
 
+  // 限制图片大小为 10MB
   if (file.size > 10 * 1024 * 1024) {
     ElMessage.error('Image size should be less than 10MB')
     return
   }
 
+  // 释放旧的内存 URL，防止内存泄漏
   if (pendingFile.value && localCustomUrl.value) {
     URL.revokeObjectURL(localCustomUrl.value)
   }
 
   pendingFile.value = file
+  // 创建本地预览 URL (Blob URL)
   localCustomUrl.value = URL.createObjectURL(file)
   tempBg.value = 'custom'
   isCustomDeleted.value = false
@@ -213,13 +242,13 @@ const triggerUpload = () => {
   if (!localCustomUrl.value) {
     fileInput.value.click()
   } else {
-    // If image exists, clicking just selects it
+    // 如果已经有图片了，点击该块仅作为选中操作
     tempBg.value = 'custom'
   }
 }
 
 const removeCustomImage = (e) => {
-  e.stopPropagation()
+  e.stopPropagation() // 阻止事件冒泡，防止触发选中
   if (localCustomUrl.value && pendingFile.value) {
     URL.revokeObjectURL(localCustomUrl.value)
   }
@@ -231,13 +260,18 @@ const removeCustomImage = (e) => {
   }
 }
 
+// 组件卸载时务必清理内存中的 Blob URL
 onUnmounted(() => {
   if (pendingFile.value && localCustomUrl.value) {
     URL.revokeObjectURL(localCustomUrl.value)
   }
 })
 
-// Local state for optimistic UI
+// ==========================================
+// 乐观 UI 状态绑定 (Optimistic UI)
+// 为什么不直接绑定 store？为了实现“点击 Save 才生效，点击 Close 放弃修改”的体验。
+// 这里使用本地 ref 拷贝 store 中的初始值。
+// ==========================================
 const workMins = ref(Math.floor(pomodoroStore.pomodoroDuration / 60))
 const shortBreakMins = ref(Math.floor(pomodoroStore.shortBreakDuration / 60))
 const longBreakMins = ref(Math.floor(pomodoroStore.longBreakDuration / 60))
@@ -256,34 +290,38 @@ const bgOverlayOpacity = ref(pomodoroStore.bgOverlayOpacity)
 
 const backgrounds = ['day_1.jpg', 'night_1.jpg']
 
+// 格式化背景图名称，例如 "day_1.jpg" -> "Day 1"
 const formatBgName = (name) => {
   return name.replace('.jpg', '').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
 
+// ==========================================
+// 保存修改核心逻辑
+// ==========================================
 const saveChanges = async () => {
-  // Commit changes to store
   
-  // Handle deletion
+  // 1. 处理自定义图片的删除（如果用户点击了垃圾桶）
   if (isCustomDeleted.value) {
     try {
-      await imageDb.deleteImage('custom')
-      pomodoroStore.customBgUrl = '' // clear store URL
-      await pomodoroStore.loadCustomBackground() // Reload to ensure sync
+      await imageDb.deleteImage('custom') // 从 IndexedDB 中抹除
+      pomodoroStore.customBgUrl = '' 
+      await pomodoroStore.loadCustomBackground() 
     } catch {
       ElMessage.error('Failed to remove custom background')
     }
   }
 
-  // Handle new upload
+  // 2. 处理新上传的自定义图片
   if (tempBg.value === 'custom' && pendingFile.value) {
     try {
-      await imageDb.saveImage('custom', pendingFile.value)
+      await imageDb.saveImage('custom', pendingFile.value) // 存入 IndexedDB
       await pomodoroStore.loadCustomBackground()
     } catch {
       ElMessage.error('Failed to save custom background')
     }
   }
 
+  // 3. 将本地的 ref 状态同步回 Pinia Store
   pomodoroStore.pomodoroDuration = workMins.value * 60
   pomodoroStore.shortBreakDuration = shortBreakMins.value * 60
   pomodoroStore.longBreakDuration = longBreakMins.value * 60
@@ -300,7 +338,7 @@ const saveChanges = async () => {
   pomodoroStore.heroTheme = heroTheme.value
   pomodoroStore.bgOverlayOpacity = bgOverlayOpacity.value
   
-  // If timer is not running, reset it to reflect new settings
+  // 4. 如果当前番茄钟没有在运行，立即重置倒计时以应用新的时长设置
   if (!pomodoroStore.isRunning) {
     pomodoroStore.updateSettings({
       pomodoro: workMins.value,
@@ -309,6 +347,7 @@ const saveChanges = async () => {
     })
   }
   
+  // 通知父组件关闭弹窗
   emit('close')
 }
 </script>

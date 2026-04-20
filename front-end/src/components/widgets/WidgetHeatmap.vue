@@ -1,14 +1,25 @@
 <template>
   <el-card class="widget-card glass-card">
+    <!-- 
+    WidgetHeatmap 核心组件
+    定位：Dashboard 上的活动热力图日历，展示用户每日的任务安排与专注记录。
+    视觉：使用 Element Plus 的 el-calendar 深度定制，结合 el-popover 实现悬浮详情。
+  -->
     <template #header>
       <div class="card-header">
         <span>{{ $t('widgets.activityHeatmap') }}</span>
+        <!-- 连续专注天数（Streak）徽章，增加游戏化体验 -->
         <span class="streak-badge" v-if="streakDays > 0">
           <el-icon color="#f56c6c"><Opportunity /></el-icon> {{ streakDays }} {{ $t('widgets.dayStreak') }}
         </span>
       </div>
     </template>
+    
     <el-calendar v-model="calendarDate">
+      <!-- 
+        自定义日历单元格 (date-cell 插槽)
+        通过 data.day (格式如 '2024-05-01') 进行数据匹配。
+      -->
       <template #date-cell="{ data }">
         <el-popover
           placement="top"
@@ -18,15 +29,18 @@
         >
           <template #reference>
             <div class="calendar-cell" :class="{ 'has-focus': getFocusTimeForDate(data.day) > 0 }">
+              <!-- 仅显示日期数字，去掉年月 -->
               <span class="day-num">{{ data.day.split('-').slice(2).join('') }}</span>
               <div class="indicators">
+                <!-- 黄色圆点代表当天有任务安排 -->
                 <span v-if="getTasksForDate(data.day).length > 0" class="dot task-dot"></span>
+                <!-- 绿色圆点代表当天有专注记录 -->
                 <span v-if="getFocusTimeForDate(data.day) > 0" class="dot focus-dot"></span>
               </div>
             </div>
           </template>
           
-          <!-- Popover Content -->
+          <!-- Popover 悬浮窗内容：详细展示当天的专注时长和前 3 个任务 -->
           <div class="popover-content">
             <h4 class="popover-date">{{ formatDate(data.day) }}</h4>
             
@@ -44,6 +58,7 @@
                 <el-icon><List /></el-icon> Tasks
               </div>
               <ul class="popover-task-list">
+                <!-- 限制最多显示 3 个任务，防止弹窗过长 -->
                 <li v-for="task in getTasksForDate(data.day).slice(0, 3)" :key="task.id" class="popover-task-item">
                   <span class="task-status-dot" :class="{ done: task.status === 'DONE' }"></span>
                   <span class="task-text">{{ task.title }}</span>
@@ -54,6 +69,7 @@
               </ul>
             </div>
 
+            <!-- 无数据时的空状态占位 -->
             <div v-if="getFocusTimeForDate(data.day) === 0 && getTasksForDate(data.day).length === 0" class="empty-state">
               <span class="empty-text">{{ $t('widgets.noActivity') }}</span>
             </div>
@@ -78,6 +94,7 @@ const tasks = ref([])
 const dailyFocusData = ref([])
 const streakDays = ref(0)
 
+// 格式化日期为友好易读的字符串 (如 "Fri, May 1, 2024")
 const formatDate = (dateStr) => {
   return new Date(dateStr).toLocaleDateString(undefined, {
     weekday: 'short',
@@ -87,6 +104,7 @@ const formatDate = (dateStr) => {
   })
 }
 
+// 将秒数格式化为 "Xh Ym" 或 "Ym"
 const formatDuration = (seconds) => {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
@@ -94,6 +112,7 @@ const formatDuration = (seconds) => {
   return `${m}m`
 }
 
+// 核心数据拉取：并行请求 任务列表、每日专注统计、用户游戏化数据(Streak)
 const fetchData = async () => {
   if (!userStore.user?.id) return
   try {
@@ -110,11 +129,13 @@ const fetchData = async () => {
   }
 }
 
+// 从每日专注统计中查找特定日期的专注总秒数
 const getFocusTimeForDate = (dateStr) => {
   const stat = dailyFocusData.value.find(d => d.date === dateStr)
   return stat ? stat.totalSeconds : 0
 }
 
+// 过滤出截止日期为特定日期的任务
 const getTasksForDate = (dateStr) => {
   return tasks.value.filter(task => {
     if (!task.dueDate) return false
